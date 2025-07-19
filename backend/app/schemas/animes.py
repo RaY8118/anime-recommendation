@@ -21,11 +21,33 @@ class Anime(BaseModel):
     coverImage: Optional[CoverImage] = None
     embedding: Optional[List[float]] = Field(default_factory=list)
 
-    class Config:
-        from_attributes = True
+
+class AnimeOut(BaseModel):
+    id: Optional[int]
+    title: Title
+    description: Optional[str]
+    genres: List[str]
+    averageScore: Optional[int] = None
+    coverImage: Optional[CoverImage] = None
+
+
+class AnimeResponse(BaseModel):
+    anime: Optional[AnimeOut]
+
+
+class AnimeListResponse(BaseModel):
+    results: List[AnimeOut]
+
+
+class GenresResponse(BaseModel):
+    genres: List[str]
+
+
+class MessageResponse(BaseModel):
+    message: Optional[str]
 
 
 class QueryMode(str, Enum):
-    name = "name"
+    anime_name = "anime_name"
     genre = "genre"
     description = "description"
