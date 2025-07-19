@@ -11,8 +11,12 @@ async def generate_embeddings(text: str):
             contents=text
         )
 
-        embeddings = response.embeddings[0].values
-        return embeddings
+        if response.embeddings is not None and len(response.embeddings) > 0:
+            embeddings = response.embeddings[0].values
+            return embeddings
+        else:
+            print("No embeddings found in response.")
+            return None
     except Exception as e:
         print("Error generating embedding:", e)
         return None

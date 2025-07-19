@@ -64,6 +64,48 @@ async def get_anime(page: int = 1, perPage: int = 1):
         raise e
 
 
+async def get_anime_by_name(name: str):
+    query = '''
+    query ($search: String) {
+      Media(search: $search, type: ANIME) {
+        id
+        title {
+          romaji
+          english
+        }
+        description
+        genres
+        averageScore
+        coverImage {
+          large
+        }
+      }
+    }
+    '''
+
+    variables = {"search": name}
+
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            response = await client.post(url, json={'query': query, 'variables': variables})
+
+        if response.status_code == 200:
+            data = response.json()
+            anime = data.get('data', {}).get('Media')
+            if anime:
+                processed = await process_anime(anime)
+                processed['title']['romaji'] = processed['title']['romaji'].lower()
+                processed['title']['english'] = processed['title']['english'].lower()
+                # Generate embedding here if needed before inserting
+                processed['embedding'] = await generate_embeddings(processed['description'])
+                return processed
+        return None
+
+    except Exception as e:
+        print("Error fetching anime by name:", e)
+        return None
+
+
 async def process_anime(anime):
     title_romaji: str = anime['title'].get('romaji', '')
     title_english = anime['title'].get('english', '')
