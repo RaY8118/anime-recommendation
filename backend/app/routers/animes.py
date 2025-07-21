@@ -125,7 +125,6 @@ async def suggest_anime(anime_name: str):
 @router.get("/genres", response_model=GenresResponse)
 async def get_genres():
     genres = await anime_collection.distinct("genres")
-    print(genres)
     return {"genres": genres}
 
 
@@ -156,10 +155,16 @@ async def search_anime(query: str):
 
 
 @router.get("/filter", response_model=AnimeListResponse)
-async def filter_anime_by_genre(genre: str):
+async def filter_anime_by_genre(genre: str, limit: int = 10, page: int = 1):
+    skip = (page - 1) * limit
     animes = anime_collection.find({
-        "genres": {"$in": [genre.title()]}
-    })
+        "genres": {
+            "$elemMatch": {
+                "$regex": f"^{genre}$",
+                "$options": "i"
+            }
+        }
+    }).skip(skip).limit(limit)
 
     results = []
 
