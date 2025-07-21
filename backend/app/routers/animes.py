@@ -158,7 +158,7 @@ async def search_anime(query: str):
 @router.get("/filter", response_model=AnimeListResponse)
 async def filter_anime_by_genre(genre: str):
     animes = anime_collection.find({
-        "genres": {"$in": [genre]}
+        "genres": {"$in": [genre.title()]}
     })
 
     results = []
