@@ -6,6 +6,8 @@ from enum import Enum
 class Title(BaseModel):
     romaji: Optional[str]
     english: Optional[str]
+    display_romaji: Optional[str]
+    display_english: Optional[str]
 
 
 class CoverImage(BaseModel):

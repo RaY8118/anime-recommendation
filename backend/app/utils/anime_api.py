@@ -8,7 +8,6 @@ import asyncio
 anime_collection = db.animes
 url = "https://graphql.anilist.co"
 
-# Define GraphQL query
 query = '''
 query ($page: Int, $perPage: Int) {
   Page(page: $page, perPage: $perPage) {
@@ -31,7 +30,6 @@ query ($page: Int, $perPage: Int) {
 
 
 async def get_anime(page: int = 1, perPage: int = 1):
-
     variables = {
         'page': page,
         'perPage': perPage
@@ -48,15 +46,25 @@ async def get_anime(page: int = 1, perPage: int = 1):
             tasks = [process_anime(anime) for anime in animes]
             processed_anime = await asyncio.gather(*tasks)
 
-            for anime in processed_anime:
-                anime['title']['romaji'] = anime['title']['romaji'].lower()
-                anime['title']['english'] = anime['title']['english'].lower()
+            validated_anime = []
 
-            validated_anime = [Anime(**anime).dict()
-                               for anime in processed_anime]
+            for anime in processed_anime:
+                anime['title']['display_romaji'] = anime['title']['romaji']
+                anime['title']['display_english'] = anime['title']['english']
+
+                anime['title']['romaji'] = anime['title']['romaji'].lower(
+                ) if anime['title']['romaji'] else None
+                anime['title']['english'] = anime['title']['english'].lower(
+                ) if anime['title']['english'] else None
+
+                if 'description' in anime and anime['description']:
+                    anime['description'] = clean_html(anime['description'])
+
+                validated_anime.append(Anime(**anime).model_dump())
+
             await anime_collection.insert_many(validated_anime)
 
-            return {"status": "success", "inserted_ids": len(processed_anime)}
+            return {"status": "success", "inserted_ids": len(validated_anime)}
 
         else:
             return {"status": "error", "code": response.status_code, "message": "Failed to fetch anime data"}
@@ -94,9 +102,17 @@ async def get_anime_by_name(name: str):
             anime = data.get('data', {}).get('Media')
             if anime:
                 processed = await process_anime(anime)
-                processed['title']['romaji'] = processed['title']['romaji'].lower()
-                processed['title']['english'] = processed['title']['english'].lower()
-                # Generate embedding here if needed before inserting
+
+                # ✅ Add display versions before lowercasing
+                processed['title']['display_romaji'] = processed['title']['romaji']
+                processed['title']['display_english'] = processed['title']['english']
+
+                processed['title']['romaji'] = processed['title']['romaji'].lower(
+                ) if processed['title']['romaji'] else None
+                processed['title']['english'] = processed['title']['english'].lower(
+                ) if processed['title']['english'] else None
+
+                # Generate embedding for description
                 processed['embedding'] = await generate_embeddings(processed['description'])
                 return processed
         return None

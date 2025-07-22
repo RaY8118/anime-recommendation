@@ -1,4 +1,3 @@
-import numpy as np
 from google import genai
 
 client = genai.Client()
