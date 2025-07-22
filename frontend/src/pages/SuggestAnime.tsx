@@ -1,33 +1,37 @@
+import { useMutation } from "@tanstack/react-query";
+import type { AxiosError, AxiosResponse } from "axios";
 import { useState } from "react";
-import { suggestAnime } from "../services/api";
 import { Error } from "../components/Error";
+import { suggestAnime } from "../services/api";
+import type { MessageResponse } from "../types/anime";
+
 const SuggestAnime = () => {
   const [animeName, setAnimeName] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const { mutate, isPending, isError, isSuccess, error } = useMutation<
+    AxiosResponse<MessageResponse>,
+    AxiosError,
+    string
+  >({
+    mutationFn: suggestAnime,
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError(null);
-    setSuccess(false);
-
-    try {
-      const response = await suggestAnime(animeName);
-      console.log(response.data);
-      setSuccess(true);
+    if (animeName) {
+      mutate(animeName);
       setAnimeName("");
-    } catch (err: any) {
-      console.error("Error suggesting anime:", err);
-      if (err.response?.data?.detail) {
-        setError(err.response.data.detail);
-      } else {
-        setError("Failed to suggest anime. Please try again.");
-      }
-    } finally {
-      setLoading(false);
     }
+  };
+
+  const getErrorMessage = () => {
+    if (!error) return "An unexpected error occurred.";
+
+    if (error.response?.status === 409) {
+      return `${animeName} already exists in the database.`;
+    }
+
+    return error.message || "An unexpected error occurred.";
   };
 
   return (
@@ -40,12 +44,12 @@ const SuggestAnime = () => {
         onSubmit={handleSubmit}
         className="bg-gray-800 p-6 rounded-lg shadow-lg space-y-4 max-w-lg mx-auto"
       >
-        {success && (
+        {isSuccess && (
           <div className="bg-green-500 text-white p-3 rounded-md mb-4 text-center">
             Anime suggestion submitted successfully!
           </div>
         )}
-        {error && <Error message={error} />}
+        {isError && <Error message={getErrorMessage()} />}
 
         <div>
           <label
@@ -68,12 +72,13 @@ const SuggestAnime = () => {
         <button
           type="submit"
           className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-300 ease-in-out"
-          disabled={loading}
+          disabled={isPending}
         >
-          {loading ? "Submitting..." : "Suggest Anime"}
+          {isPending ? "Submitting..." : "Suggest Anime"}
         </button>
       </form>
     </div>
   );
 };
+
 export default SuggestAnime;

@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import type { AnimeOut } from "../services/api";
+import type { AnimeOut } from "../types/anime";
 
 export const AnimeCard = ({ anime }: { anime: AnimeOut }) => {
   return (
@@ -11,7 +11,7 @@ export const AnimeCard = ({ anime }: { anime: AnimeOut }) => {
           className="w-full h-64 object-cover mb-2 rounded"
         />
         <h3 className="text-lg font-medium mb-2">
-          {anime.title.english || anime.title.romaji}
+          {anime.title.display_english || anime.title.display_romaji}
         </h3>
         <p className="text-sm">{anime.description?.slice(0, 100)}...</p>
       </div>

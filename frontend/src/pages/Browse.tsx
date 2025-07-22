@@ -1,9 +1,10 @@
-import { useState } from "react";
-import { getAllAnimes, type AnimeOut } from "../services/api";
-import { AnimeCard } from "../components/AnimeCard";
-import { Loader } from "../components/Loader";
-import { Error } from "../components/Error";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { AnimeCard } from "../components/AnimeCard";
+import { Error } from "../components/Error";
+import { Loader } from "../components/Loader";
+import { getAllAnimes } from "../services/api";
+import type { AnimeOut } from "../types/anime";
 
 const itemsPerPage = 12;
 

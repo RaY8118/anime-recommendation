@@ -1,34 +1,31 @@
-import { useState } from "react";
-import { getRecommendations, type AnimeOut, QueryMode } from "../services/api";
+import { useQuery } from "@tanstack/react-query";
+import { useState, type FormEvent } from "react";
 import { AnimeCard } from "../components/AnimeCard";
-import { Loader } from "../components/Loader";
 import { Error } from "../components/Error";
+import { Loader } from "../components/Loader";
+import { getRecommendations } from "../services/api";
+import { QueryMode, type RecommendationsParams } from "../types/anime";
 
 const Recommendations = () => {
   const [query, setQuery] = useState("");
   const [mode, setMode] = useState<QueryMode>(QueryMode.description);
   const [topK, setTopK] = useState(5);
-  const [results, setResults] = useState<AnimeOut[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [submittedParams, setSubmittedParams] =
+    useState<RecommendationsParams | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: ["recommendations", submittedParams],
+    queryFn: () => getRecommendations(submittedParams!),
+    enabled: !!submittedParams,
+  });
+
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await getRecommendations({
-        query,
-        mode,
-        top_k: topK,
-      });
-      setResults(response.data.results);
-    } catch (err) {
-      console.error("Error fetching recommendations:", err);
-      setError("Failed to fetch recommendations. Please try again.");
-    } finally {
-      setLoading(false);
-    }
+    setSubmittedParams({
+      query,
+      mode,
+      top_k: topK,
+    });
   };
 
   return (
@@ -99,24 +96,21 @@ const Recommendations = () => {
         <button
           type="submit"
           className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-300 ease-in-out"
-          disabled={loading}
         >
-          {loading ? "Getting Recommendations..." : "Get Recommendations"}
+          {isLoading ? "Getting Recommendations..." : "Get Recommendations"}
         </button>
       </form>
 
-      {loading && <Loader />}
-      {error && <Error message={error} />}
+      {isLoading && <Loader />}
+      {isError && <Error message={(error as Error).message} />}
 
-      {results.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {results.map((anime) => (
-            <AnimeCard key={anime.id} anime={anime} />
-          ))}
-        </div>
-      )}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        {data?.data.results.map((anime) => (
+          <AnimeCard key={anime.id} anime={anime} />
+        ))}
+      </div>
 
-      {!loading && !error && results.length === 0 && query && (
+      {!isLoading && !error && data?.data.results.length === 0 && query && (
         <p className="text-center text-gray-500 text-lg">
           No recommendations found for your query.
         </p>

@@ -1,62 +1,13 @@
-import axios from "axios";
 import type { AxiosResponse } from "axios";
+import axios from "axios";
+import type {
+  AnimeListResponse,
+  AnimeResponse,
+  GenresResponse,
+  MessageResponse,
+  RecommendationsParams,
+} from "../types/anime";
 const API_URL = import.meta.env.VITE_API_URL;
-
-export interface Title {
-  romaji: string;
-  english: string;
-}
-
-export interface CoverImage {
-  large: string;
-}
-
-export interface Anime {
-  id: number;
-  title: Title;
-  description: string;
-  genres: Array<string>;
-  averageScore: number;
-  coverImage: CoverImage;
-  embedding: Array<number>;
-}
-
-export interface AnimeOut {
-  id: number;
-  title: Title;
-  description: string;
-  genres: Array<string>;
-  averageScore: number;
-  coverImage: CoverImage;
-}
-
-export interface AnimeResponse {
-  anime: AnimeOut;
-}
-
-export interface AnimeListResponse {
-  results: Array<AnimeOut>;
-}
-
-export interface GenresResponse {
-  genres: Array<string>;
-}
-
-export interface MessageResponse {
-  message: string;
-}
-
-export enum QueryMode {
-  anime_name = "anime_name",
-  genre = "genre",
-  description = "description",
-}
-
-export interface RecommendationsParams {
-  query: string;
-  mode: QueryMode;
-  top_k: number;
-}
 
 const api = axios.create({
   baseURL: API_URL,
