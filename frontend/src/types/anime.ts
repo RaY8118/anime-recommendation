@@ -36,6 +36,14 @@ export interface AnimeListResponse {
   results: Array<AnimeOut>;
 }
 
+export interface AnimesListResponse {
+  results: Array<AnimeOut>;
+  total: number;
+  page: number;
+  perPage: number;
+  totalPages: number;
+}
+
 export interface GenresResponse {
   genres: Array<string>;
 }

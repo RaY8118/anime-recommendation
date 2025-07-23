@@ -3,6 +3,7 @@ import axios from "axios";
 import type {
   AnimeListResponse,
   AnimeResponse,
+  AnimesListResponse,
   GenresResponse,
   MessageResponse,
   RecommendationsParams,
@@ -16,10 +17,17 @@ const api = axios.create({
   },
 });
 
-export const getAllAnimes = async (): Promise<
-  AxiosResponse<AnimeListResponse>
-> => {
-  return api.get(`${API_URL}/animes`);
+export const getAllAnimes = async (
+  page: number,
+  perPage: number = 12
+): Promise<AnimesListResponse> => {
+  const response = await api.get(`${API_URL}/animes`, {
+    params: {
+      page,
+      per_page: perPage,
+    },
+  });
+  return response.data;
 };
 
 export const getAnimeByName = async (
