@@ -9,20 +9,22 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-gray-900 text-white px-6 py-4 shadow">
-      <div className="container mx-auto flex justify-between items-center">
-        <Link to="/" className="text-2xl font-bold">
+    <nav className="bg-card text-text px-4 py-3 shadow-lg md:px-6">
+      <div className="container mx-auto flex items-center justify-between">
+        <Link
+          to="/"
+          className="text-3xl font-extrabold text-primary transition-colors duration-300 hover:text-accent"
+        >
           NekoRec
         </Link>
 
-        {/* Hamburger menu button for mobile */}
         <div className="md:hidden">
           <button
             onClick={toggleMenu}
-            className="text-white focus:outline-none"
+            className="rounded-md p-2 text-text-light focus:outline-none focus:ring-2 focus:ring-accent"
           >
             <svg
-              className="h-6 w-6"
+              className="h-7 w-7"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -47,75 +49,73 @@ const Navbar = () => {
           </button>
         </div>
 
-        {/* Desktop menu */}
-        <div className="hidden md:flex space-x-4 items-center">
+        <div className="hidden md:flex items-center space-x-6">
           <Link
             to="/"
-            className="hover:text-gray-300 px-3 py-2 rounded-md text-sm font-medium"
+            className="text-text-light transition-colors duration-300 hover:text-primary text-lg font-medium"
           >
             Home
           </Link>
           <Link
             to="/browse"
-            className="hover:text-gray-300 px-3 py-2 rounded-md text-sm font-medium"
+            className="text-text-light transition-colors duration-300 hover:text-primary text-lg font-medium"
           >
             Animes
           </Link>
           <Link
             to="/recommendations"
-            className="hover:text-gray-300 px-3 py-2 rounded-md text-sm font-medium"
+            className="text-text-light transition-colors duration-300 hover:text-primary text-lg font-medium"
           >
             Recommendations
           </Link>
           <Link
             to="/genres"
-            className="hover:text-gray-300 px-3 py-2 rounded-md text-sm font-medium"
+            className="text-text-light transition-colors duration-300 hover:text-primary text-lg font-medium"
           >
             Genres
           </Link>
           <Link
             to="/suggest"
-            className="hover:text-gray-300 px-3 py-2 rounded-md text-sm font-medium"
+            className="text-text-light transition-colors duration-300 hover:text-primary text-lg font-medium"
           >
             Suggest Anime
           </Link>
         </div>
       </div>
 
-      {/* Mobile menu, toggles based on isOpen state */}
       {isOpen && (
-        <div className="md:hidden bg-gray-800 py-2">
+        <div className="md:hidden bg-card py-3 shadow-inner">
           <Link
             to="/"
-            className="block px-4 py-2 text-sm text-white hover:bg-gray-700"
+            className="block px-5 py-3 text-base text-text-light transition-colors duration-300 hover:bg-background hover:text-primary"
             onClick={toggleMenu}
           >
             Home
           </Link>
           <Link
             to="/browse"
-            className="block px-4 py-2 text-sm text-white hover:bg-gray-700"
+            className="block px-5 py-3 text-base text-text-light transition-colors duration-300 hover:bg-background hover:text-primary"
             onClick={toggleMenu}
           >
             Animes
           </Link>
           <Link
             to="/recommendations"
-            className="block px-4 py-2 text-sm text-white hover:bg-gray-700"
+            className="block px-5 py-3 text-base text-text-light transition-colors duration-300 hover:bg-background hover:text-primary"
             onClick={toggleMenu}
           >
             Recommendations
           </Link>
           <Link
             to="/genres"
-            className="block px-4 py-2 text-sm text-white hover:bg-gray-700"
+            className="block px-5 py-3 text-base text-text-light transition-colors duration-300 hover:bg-background hover:text-primary"
             onClick={toggleMenu}
           >
             Genres
           </Link>
           <Link
             to="/suggest"
-            className="block px-4 py-2 text-sm text-white hover:bg-gray-700"
+            className="block px-5 py-3 text-base text-text-light transition-colors duration-300 hover:bg-background hover:text-primary"
             onClick={toggleMenu}
           >
             Suggest Anime

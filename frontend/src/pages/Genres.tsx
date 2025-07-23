@@ -53,11 +53,13 @@ const Genres = () => {
   const hasMoreAnimes = (animesResponse?.length || 0) === limit;
 
   return (
-    <div className="container mx-auto px-4 py-8 mt-4 bg-gray-900 text-white rounded-lg shadow-lg">
-      <h1 className="text-3xl font-bold mb-6 text-center">Browse by Genre</h1>
+    <div className="container mx-auto px-4 py-10">
+      <h1 className="mb-10 text-center text-5xl font-extrabold text-primary drop-shadow-lg">
+        Browse by Genre
+      </h1>
 
       {/* Genre selector */}
-      <div className="mb-8 bg-gray-800 p-6 rounded-lg shadow-lg">
+      <div className="mb-12 rounded-xl bg-card p-8 shadow-xl">
         {genresLoading && <Loader />}
         {genresError && (
           <ErrorComponent message={(genresFetchError as Error).message} />
@@ -66,7 +68,7 @@ const Genres = () => {
           <>
             <label
               htmlFor="genre-select"
-              className="block mb-2 text-lg font-semibold text-gray-300"
+              className="mb-4 block text-2xl font-semibold text-accent"
             >
               Select Genre
             </label>
@@ -74,7 +76,7 @@ const Genres = () => {
               id="genre-select"
               value={selectedGenre}
               onChange={handleGenreChange}
-              className="w-full px-4 py-2 rounded-md bg-gray-700 border border-gray-600 text-white focus:outline-none focus:border-blue-500"
+              className="w-full cursor-pointer appearance-none rounded-lg border border-primary bg-background px-5 py-3 text-lg text-text shadow-sm transition-all duration-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent"
             >
               <option value="">-- Choose a genre --</option>
               {genresResponse.map((genre) => (
@@ -96,33 +98,33 @@ const Genres = () => {
         <>
           {animesResponse.length > 0 ? (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                 {animesResponse.map((anime) => (
                   <AnimeCard key={anime.id} anime={anime} />
                 ))}
               </div>
-              <div className="flex justify-center mt-8 space-x-4">
+              <div className="mt-12 flex items-center justify-center space-x-4">
                 <button
                   onClick={() => handlePageChange(page - 1)}
                   disabled={page === 1 || animesLoading}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="rounded-lg bg-accent px-6 py-3 text-lg font-semibold text-white shadow-md transition-all duration-300 hover:bg-primary disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Previous
                 </button>
-                <span className="self-center text-lg font-medium text-gray-300">
+                <span className="text-xl font-medium text-text-light">
                   Page {page}
                 </span>
                 <button
                   onClick={() => handlePageChange(page + 1)}
                   disabled={!hasMoreAnimes || animesLoading}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="rounded-lg bg-accent px-6 py-3 text-lg font-semibold text-white shadow-md transition-all duration-300 hover:bg-primary disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Next
                 </button>
               </div>
             </>
           ) : (
-            <p className="text-center text-gray-500 text-lg">
+            <p className="text-center text-2xl text-text-light">
               No animes found for this genre or page.
             </p>
           )}
@@ -130,7 +132,7 @@ const Genres = () => {
       )}
 
       {!selectedGenre && !genresLoading && !genresError && (
-        <p className="text-center text-gray-500 text-lg">
+        <p className="text-center text-2xl text-text-light">
           Please select a genre to browse animes.
         </p>
       )}

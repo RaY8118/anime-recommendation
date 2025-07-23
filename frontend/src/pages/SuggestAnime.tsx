@@ -35,17 +35,17 @@ const SuggestAnime = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6 text-center">
+    <div className="container mx-auto px-4 py-10">
+      <h1 className="mb-10 text-center text-5xl font-extrabold text-primary drop-shadow-lg">
         Suggest a New Anime
       </h1>
 
       <form
         onSubmit={handleSubmit}
-        className="bg-gray-800 p-6 rounded-lg shadow-lg space-y-4 max-w-lg mx-auto"
+        className="mx-auto max-w-lg space-y-6 rounded-xl bg-card p-8 shadow-xl"
       >
         {isSuccess && (
-          <div className="bg-green-500 text-white p-3 rounded-md mb-4 text-center">
+          <div className="mb-4 rounded-md bg-secondary p-4 text-center text-lg font-semibold text-background shadow-md">
             Anime suggestion submitted successfully!
           </div>
         )}
@@ -54,7 +54,7 @@ const SuggestAnime = () => {
         <div>
           <label
             htmlFor="animeName"
-            className="block mb-2 text-lg font-semibold text-gray-300"
+            className="mb-3 block text-2xl font-semibold text-accent"
           >
             Anime Name
           </label>
@@ -63,7 +63,7 @@ const SuggestAnime = () => {
             type="text"
             value={animeName}
             onChange={(e) => setAnimeName(e.target.value)}
-            className="w-full px-4 py-2 rounded-md bg-gray-700 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+            className="w-full rounded-lg border border-primary bg-background px-5 py-3 text-lg text-text placeholder-text-dark shadow-sm transition-all duration-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent"
             placeholder="e.g., Naruto"
             required
           />
@@ -71,7 +71,7 @@ const SuggestAnime = () => {
 
         <button
           type="submit"
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-300 ease-in-out"
+          className="w-full rounded-lg bg-primary px-6 py-3 text-xl font-bold text-white shadow-md transition-all duration-300 hover:bg-accent"
           disabled={isPending}
         >
           {isPending ? "Submitting..." : "Suggest Anime"}

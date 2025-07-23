@@ -12,7 +12,7 @@ import SuggestAnime from "./pages/SuggestAnime";
 function App() {
   return (
     <Router>
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col bg-background text-text">
         <Navbar />
         <main className="flex-grow">
           {" "}
