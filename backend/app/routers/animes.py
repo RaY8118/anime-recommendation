@@ -1,10 +1,10 @@
-from fastapi import APIRouter, HTTPException, status, Request
+from fastapi import APIRouter, HTTPException, status, Request, Query
 from app.utils.anime_api import get_anime, get_anime_by_name
 from app.utils.embeddings import generate_embeddings
 from app.utils.similarity import cosine_similarity
 from app.utils.validate_params import validate_query_params
 from app.dependencies import db
-from app.schemas.animes import QueryMode, AnimeListResponse, AnimeResponse, MessageResponse, GenresResponse
+from app.schemas.animes import QueryMode, AnimeListResponse, AnimesListResponse, AnimeResponse, MessageResponse, GenresResponse
 from app.utils.fetch_status import get_current_page, update_current_page
 import random
 
@@ -75,12 +75,15 @@ async def recommend_anime(request: Request, query: str, mode: QueryMode = QueryM
     return {"results": results[:top_k]}
 
 
-@router.get("", response_model=AnimeListResponse)
-async def get_animes():
-    animes = anime_collection.find({})
-    results = []
+@router.get("", response_model=AnimesListResponse)
+async def get_animes(page: int = Query(1, ge=1), per_page: int = Query(12, ge=1, le=100)):
+    skip = (page - 1) * per_page
 
-    async for anime in animes:
+    total = await anime_collection.count_documents({})
+    cursor = anime_collection.find({}).skip(skip).limit(per_page)
+
+    results = []
+    async for anime in cursor:
         results.append({
             "id": anime['id'],
             "title": anime['title'],
@@ -93,7 +96,13 @@ async def get_animes():
     if not results:
         raise HTTPException(status_code=404, detail="No animes found")
 
-    return {"results": results}
+    return {
+        "results": results,
+        "total": total,
+        "page": page,
+        "perPage": per_page,
+        "totalPages": (total + per_page - 1) // per_page
+    }
 
 
 @router.post("/suggestions", response_model=MessageResponse, status_code=status.HTTP_201_CREATED)

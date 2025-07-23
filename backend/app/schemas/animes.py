@@ -37,6 +37,14 @@ class AnimeResponse(BaseModel):
     anime: Optional[AnimeOut]
 
 
+class AnimesListResponse(BaseModel):
+    results: List[AnimeOut]
+    total: int
+    page: int
+    perPage: int
+    totalPages: int
+
+
 class AnimeListResponse(BaseModel):
     results: List[AnimeOut]
 
