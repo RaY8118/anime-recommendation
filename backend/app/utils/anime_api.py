@@ -8,28 +8,38 @@ import asyncio
 anime_collection = db.animes
 url = "https://graphql.anilist.co"
 
-query = '''
-query ($page: Int, $perPage: Int) {
-  Page(page: $page, perPage: $perPage) {
-    media(type: ANIME, sort: POPULARITY_DESC) {
-      id
-      title {
-        romaji
-        english
-      }
-      description
-      genres
-      averageScore
-      coverImage {
-        large
-      }
-    }
-  }
-}
-'''
-
 
 async def get_anime(page: int = 1, perPage: int = 1):
+    query = '''
+    query ($page: Int, $perPage: Int) {
+      Page(page: $page, perPage: $perPage) {
+        media(type: ANIME, sort: POPULARITY_DESC) {
+          id
+          title {
+            romaji
+            english
+          }
+          description
+          genres
+          averageScore
+          episodes
+          duration
+          season
+          seasonYear
+          status
+          source
+          studios {
+            nodes {
+              name
+            }
+          }
+          coverImage {
+            large
+          }
+        }
+      }
+    }
+    '''
     variables = {
         'page': page,
         'perPage': perPage
@@ -84,6 +94,17 @@ async def get_anime_by_name(name: str):
         description
         genres
         averageScore
+        episodes
+        duration
+        season
+        seasonYear
+        status
+        source
+        studios {
+          nodes {
+            name
+          }
+        }
         coverImage {
           large
         }
@@ -103,7 +124,6 @@ async def get_anime_by_name(name: str):
             if anime:
                 processed = await process_anime(anime)
 
-                # ✅ Add display versions before lowercasing
                 processed['title']['display_romaji'] = processed['title']['romaji']
                 processed['title']['display_english'] = processed['title']['english']
 
@@ -129,7 +149,17 @@ async def process_anime(anime):
     genres = anime.get('genres', [])
     genres_text = ', '.join(genres)
 
-    final_text = f"Title: {title_romaji} ({title_english})\nDesciption: {description_text}\nGenres: {genres_text}"
+    # Parse new fields safely
+    anime['episodes'] = anime.get('episodes')
+    anime['duration'] = anime.get('duration')
+    anime['season'] = anime.get('season')
+    anime['seasonYear'] = anime.get('seasonYear')
+    anime['status'] = anime.get('status')
+    anime['source'] = anime.get('source')
+    anime['studios'] = [studio['name']
+                        for studio in anime.get('studios', {}).get('nodes', [])]
+
+    final_text = f"Title: {title_romaji} ({title_english})\nDescription: {description_text}\nGenres: {genres_text}"
 
     embedding = await generate_embeddings(final_text)
     anime['embedding'] = embedding if embedding else []

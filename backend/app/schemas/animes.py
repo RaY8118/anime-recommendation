@@ -20,6 +20,13 @@ class Anime(BaseModel):
     description: Optional[str]
     genres: List[str]
     averageScore: Optional[int] = None
+    episodes: Optional[int] = None
+    duration: Optional[int] = None
+    season: Optional[str] = None
+    seasonYear: Optional[int] = None
+    status: Optional[str] = None
+    source: Optional[str] = None
+    studios: Optional[List[str]] = Field(default_factory=list)
     coverImage: Optional[CoverImage] = None
     embedding: Optional[List[float]] = Field(default_factory=list)
 
@@ -30,6 +37,13 @@ class AnimeOut(BaseModel):
     description: Optional[str]
     genres: List[str]
     averageScore: Optional[int] = None
+    episodes: Optional[int] = None
+    duration: Optional[int] = None
+    season: Optional[str] = None
+    seasonYear: Optional[int] = None
+    status: Optional[str] = None
+    source: Optional[str] = None
+    studios: Optional[List[str]] = Field(default_factory=list)
     coverImage: Optional[CoverImage] = None
 
 

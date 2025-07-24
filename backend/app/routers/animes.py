@@ -59,6 +59,13 @@ async def recommend_anime(request: Request, query: str, mode: QueryMode = QueryM
                 "description": anime['description'],
                 "averageScore": anime['averageScore'],
                 "genres": anime['genres'],
+                "episodes": anime['episodes'],
+                "duration": anime['duration'],
+                "season": anime['season'],
+                "seasonYear": anime['seasonYear'],
+                "status": anime['status'],
+                "source": anime['source'],
+                "studios": anime['studios'],
                 "coverImage": anime['coverImage'],
                 "score": float(score)
             })
@@ -68,7 +75,6 @@ async def recommend_anime(request: Request, query: str, mode: QueryMode = QueryM
 
     results.sort(key=lambda x: x['score'], reverse=True)
 
-    # Remove score before returning to user
     for anime in results:
         anime.pop("score", None)
 
@@ -90,6 +96,13 @@ async def get_animes(page: int = Query(1, ge=1), per_page: int = Query(12, ge=1,
             "description": anime['description'],
             "averageScore": anime['averageScore'],
             "genres": anime['genres'],
+            "episodes": anime['episodes'],
+            "duration": anime['duration'],
+            "season": anime['season'],
+            "seasonYear": anime['seasonYear'],
+            "status": anime['status'],
+            "source": anime['source'],
+            "studios": anime['studios'],
             "coverImage": anime['coverImage']
         })
 
@@ -154,6 +167,13 @@ async def search_anime(query: str):
             "description": anime['description'],
             "averageScore": anime['averageScore'],
             "genres": anime['genres'],
+            "episodes": anime['episodes'],
+            "duration": anime['duration'],
+            "season": anime['season'],
+            "seasonYear": anime['seasonYear'],
+            "status": anime['status'],
+            "source": anime['source'],
+            "studios": anime['studios'],
             "coverImage": anime['coverImage']
         })
 
@@ -184,6 +204,13 @@ async def filter_anime_by_genre(genre: str, limit: int = 10, page: int = 1):
             "description": anime['description'],
             "averageScore": anime['averageScore'],
             "genres": anime['genres'],
+            "episodes": anime['episodes'],
+            "duration": anime['duration'],
+            "season": anime['season'],
+            "seasonYear": anime['seasonYear'],
+            "status": anime['status'],
+            "source": anime['source'],
+            "studios": anime['studios'],
             "coverImage": anime['coverImage']
         })
 
@@ -214,7 +241,8 @@ async def get_random_anime():
 @router.get("/top-rated", response_model=AnimeListResponse)
 async def top_rated_anime(request: Request, limit: int = 10):
     validate_query_params(request, {"limit"})
-    animes = anime_collection.find({}).sort("averageScore", -1).limit(limit)
+    animes = anime_collection.find({}).sort(
+        "averageScore", -1).limit(limit)
 
     results = []
 
@@ -225,6 +253,13 @@ async def top_rated_anime(request: Request, limit: int = 10):
             "description": anime['description'],
             "averageScore": anime['averageScore'],
             "genres": anime['genres'],
+            "episodes": anime['episodes'],
+            "duration": anime['duration'],
+            "season": anime['season'],
+            "seasonYear": anime['seasonYear'],
+            "status": anime['status'],
+            "source": anime['source'],
+            "studios": anime['studios'],
             "coverImage": anime['coverImage']
         })
 
