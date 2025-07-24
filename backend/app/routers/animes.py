@@ -1,3 +1,4 @@
+from fastapi import Query
 from fastapi import APIRouter, HTTPException, status, Request, Query
 from app.utils.anime_api import get_anime, get_anime_by_name
 from app.utils.embeddings import generate_embeddings
@@ -7,7 +8,7 @@ from app.dependencies import db
 from app.schemas.animes import QueryMode, AnimeListResponse, AnimesListResponse, AnimeResponse, MessageResponse, GenresResponse
 from app.utils.fetch_status import get_current_page, update_current_page
 import random
-
+from typing import Optional
 router = APIRouter()
 anime_collection = db.animes
 
@@ -82,11 +83,45 @@ async def recommend_anime(request: Request, query: str, mode: QueryMode = QueryM
 
 
 @router.get("", response_model=AnimesListResponse)
-async def get_animes(page: int = Query(1, ge=1), per_page: int = Query(12, ge=1, le=100)):
+async def get_animes(
+    page: int = Query(1, ge=1),
+    per_page: int = Query(12, ge=1, le=100),
+    genre: Optional[str] = Query(None),
+    min_score: Optional[int] = Query(None),
+    max_score: Optional[int] = Query(None),
+    season: Optional[str] = Query(None),
+    year: Optional[int] = Query(None),
+    query: Optional[str] = Query(None)
+):
     skip = (page - 1) * per_page
 
-    total = await anime_collection.count_documents({})
-    cursor = anime_collection.find({}).skip(skip).limit(per_page)
+    mongo_query = {}
+
+    if genre:
+        mongo_query["genres"] = genre
+
+    if min_score or max_score:
+        mongo_query["averageScore"] = {}
+        if min_score:
+            mongo_query["averageScore"]["$gte"] = min_score
+        if max_score:
+            mongo_query["averageScore"]["$lte"] = max_score
+
+    if season:
+        mongo_query["season"] = season.upper()
+
+    if year:
+        mongo_query["seasonYear"] = year
+
+    if query:
+        # 🔥 Add regex search for romaji or english title fields
+        mongo_query["$or"] = [
+            {"title.romaji": {"$regex": query, "$options": "i"}},
+            {"title.english": {"$regex": query, "$options": "i"}}
+        ]
+
+    total = await anime_collection.count_documents(mongo_query)
+    cursor = anime_collection.find(mongo_query).skip(skip).limit(per_page)
 
     results = []
     async for anime in cursor:
@@ -107,14 +142,20 @@ async def get_animes(page: int = Query(1, ge=1), per_page: int = Query(12, ge=1,
         })
 
     if not results:
-        raise HTTPException(status_code=404, detail="No animes found")
+        return {
+            "results": [],
+            "total": 0,
+            "page": page,
+            "perPage": per_page,
+            "totalPages": 0
+        }
 
     return {
         "results": results,
         "total": total,
         "page": page,
         "perPage": per_page,
-        "totalPages": (total + per_page - 1) // per_page
+        "totalPages": (total + per_page - 1)
     }
 
 
