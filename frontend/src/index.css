@@ -1,25 +1,34 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #6D28D9;
-  --color-secondary: #F97316;
-  --color-accent: #EC4899;
-  --color-background: #1A122A;
-  --color-card: #1E293B;
-  --color-text: #F8FAFC;
-  --color-text-light: #E0BBE4;
-  --color-text-dark: #957DAD;
+  --color-primary: #6d28d9;
+  --color-secondary: #f97316;
+  --color-accent: #ec4899;
+  --color-background: #1a122a;
+  --color-card: #1e293b;
+  --color-text: #f8fafc;
+  --color-text-light: #e0bbe4;
+  --color-text-dark: #957dad;
 }
 
 @layer base {
   body {
     @apply bg-background text-text font-sans;
-    background: linear-gradient(to right, var(--tw-colors-background), var(--tw-colors-card));
+    background: linear-gradient(
+      to right,
+      var(--tw-colors-background),
+      var(--tw-colors-card)
+    );
     animation: gradient-pulse 10s ease infinite;
     background-size: 200% 200%;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply text-primary font-bold;
   }
 
@@ -44,5 +53,9 @@
 
   ::-webkit-scrollbar-thumb:hover {
     @apply bg-accent;
+  }
+
+  .detail-item {
+    @apply text-lg;
   }
 }

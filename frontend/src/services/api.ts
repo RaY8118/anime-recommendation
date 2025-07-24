@@ -17,6 +17,10 @@ const api = axios.create({
   },
 });
 
+export const pingServer = async (): Promise<AxiosResponse<MessageResponse>> => {
+  return api.get(`${API_URL}/ping`);
+};
+
 export const getAllAnimes = async (
   page: number,
   perPage: number = 12

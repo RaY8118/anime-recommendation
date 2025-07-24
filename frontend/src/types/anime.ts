@@ -10,22 +10,29 @@ export interface CoverImage {
 }
 
 export interface Anime {
-  id: number;
+  id?: number;
   title: Title;
-  description: string;
+  description?: string;
   genres: Array<string>;
-  averageScore: number;
-  coverImage: CoverImage;
+  averageScore?: number;
+  coverImage?: CoverImage;
   embedding: Array<number>;
 }
 
 export interface AnimeOut {
-  id: number;
+  id?: number;
   title: Title;
-  description: string;
+  description?: string;
   genres: Array<string>;
-  averageScore: number;
-  coverImage: CoverImage;
+  averageScore?: number;
+  episodes?: number;
+  duration?: number;
+  season?: string;
+  seasonYear?: number;
+  status?: string;
+  source?: string;
+  studios: Array<string>;
+  coverImage?: CoverImage;
 }
 
 export interface AnimeResponse {
