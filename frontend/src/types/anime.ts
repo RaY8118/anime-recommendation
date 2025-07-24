@@ -1,15 +1,17 @@
-export interface Title {
+import type { Dispatch, SetStateAction } from "react";
+
+export type Title = {
   romaji: string;
   english: string;
   display_romaji: string;
   display_english: string;
-}
+};
 
-export interface CoverImage {
+export type CoverImage = {
   large: string;
-}
+};
 
-export interface Anime {
+export type Anime = {
   id?: number;
   title: Title;
   description?: string;
@@ -17,9 +19,9 @@ export interface Anime {
   averageScore?: number;
   coverImage?: CoverImage;
   embedding: Array<number>;
-}
+};
 
-export interface AnimeOut {
+export type AnimeOut = {
   id?: number;
   title: Title;
   description?: string;
@@ -33,31 +35,31 @@ export interface AnimeOut {
   source?: string;
   studios: Array<string>;
   coverImage?: CoverImage;
-}
+};
 
-export interface AnimeResponse {
+export type AnimeResponse = {
   anime: AnimeOut;
-}
+};
 
-export interface AnimeListResponse {
+export type AnimeListResponse = {
   results: Array<AnimeOut>;
-}
+};
 
-export interface AnimesListResponse {
+export type AnimesListResponse = {
   results: Array<AnimeOut>;
   total: number;
   page: number;
   perPage: number;
   totalPages: number;
-}
+};
 
-export interface GenresResponse {
+export type GenresResponse = {
   genres: Array<string>;
-}
+};
 
-export interface MessageResponse {
+export type MessageResponse = {
   message: string;
-}
+};
 
 export enum QueryMode {
   anime_name = "anime_name",
@@ -65,8 +67,22 @@ export enum QueryMode {
   description = "description",
 }
 
-export interface RecommendationsParams {
+export type RecommendationsParams = {
   query: string;
   mode: QueryMode;
   top_k: number;
-}
+};
+
+export type Filters = {
+  searchQuery: string;
+  selectedGenre?: string;
+  minScore?: number;
+  maxScore?: number;
+  season?: string;
+  year?: number;
+};
+
+export type AnimeFiltersProps = {
+  filters: Filters;
+  setFilters: Dispatch<SetStateAction<Filters>>;
+};

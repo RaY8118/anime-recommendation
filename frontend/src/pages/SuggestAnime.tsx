@@ -1,12 +1,18 @@
 import { useMutation } from "@tanstack/react-query";
 import type { AxiosError, AxiosResponse } from "axios";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Error } from "../components/Error";
 import { suggestAnime } from "../services/api";
 import type { MessageResponse } from "../types/anime";
 
+import { useLocation } from "react-router-dom";
+
 const SuggestAnime = () => {
-  const [animeName, setAnimeName] = useState("");
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const animeNameFromQuery = queryParams.get("animeName");
+  const fromNotFound = queryParams.get("fromNotFound") === "true";
+  const [animeName, setAnimeName] = useState(animeNameFromQuery || "");
 
   const { mutate, isPending, isError, isSuccess, error } = useMutation<
     AxiosResponse<MessageResponse>,
@@ -15,6 +21,12 @@ const SuggestAnime = () => {
   >({
     mutationFn: suggestAnime,
   });
+
+  useEffect(() => {
+    if (fromNotFound && animeNameFromQuery) {
+      setAnimeName(animeNameFromQuery);
+    }
+  }, [fromNotFound, animeNameFromQuery]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,6 +51,9 @@ const SuggestAnime = () => {
       <h1 className="mb-10 text-center text-5xl font-extrabold text-primary drop-shadow-lg">
         Suggest a New Anime
       </h1>
+      <p className="mb-8 text-center text-lg text-text-light">
+        Can't find your favorite anime? Suggest it here and help us expand our database!
+      </p>
 
       <form
         onSubmit={handleSubmit}

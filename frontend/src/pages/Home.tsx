@@ -1,7 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { AnimeCard } from "../components/AnimeCard";
 import { Error } from "../components/Error";
+import GenreHighlights from "../components/GenreHighlights";
 import { Loader } from "../components/Loader";
+import TopRatedList from "../components/TopRatedList";
 import { getRandomAnime, getTopRated } from "../services/api";
 
 const Home = () => {
@@ -28,7 +30,7 @@ const Home = () => {
   } = useQuery({
     queryKey: ["topRatedAnimes"],
     queryFn: async () => {
-      const res = await getTopRated(4);
+      const res = await getTopRated(10);
       return res.data.results;
     },
     staleTime: 1000 * 60 * 5,
@@ -36,12 +38,16 @@ const Home = () => {
 
   return (
     <div className="container mx-auto px-4 py-10">
+      {/* Hero Title */}
       <h1 className="mb-10 text-center text-5xl font-extrabold text-primary drop-shadow-lg">
         Welcome to NekoRec
       </h1>
 
+      {/* Anime of the Moment */}
       <section className="mb-16">
-        <h2 className="mb-8 text-center text-4xl font-bold text-accent">Anime of the Moment</h2>
+        <h2 className="mb-8 text-center text-4xl font-bold text-accent">
+          Anime of the Moment
+        </h2>
         {loadingRandom && <Loader />}
         {errorRandom && <Error message={(randomError as Error).message} />}
         {randomAnime && (
@@ -51,15 +57,22 @@ const Home = () => {
         )}
       </section>
 
-      <section>
-        <h2 className="mb-8 text-center text-4xl font-bold text-primary">Top Rated Animes</h2>
+      {/* Top Rated Animes */}
+      <section className="mb-16">
+        <h2 className="mb-8 text-center text-4xl font-bold text-primary">
+          Top Rated Animes
+        </h2>
         {loadingTopRated && <Loader />}
         {errorTopRated && <Error message={(topRatedError as Error).message} />}
-        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-          {topRated?.map((anime) => (
-            <AnimeCard key={anime.id} anime={anime} />
-          ))}
-        </div>
+        {topRated && <TopRatedList animes={topRated} />}
+      </section>
+
+      {/* Genre Highlights */}
+      <section className="space-y-16">
+        <GenreHighlights genre="Action" />
+        <GenreHighlights genre="Romance" />
+        <GenreHighlights genre="Comedy" />
+        <GenreHighlights genre="Adventure" />
       </section>
     </div>
   );

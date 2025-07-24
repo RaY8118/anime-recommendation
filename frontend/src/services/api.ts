@@ -23,12 +23,21 @@ export const pingServer = async (): Promise<AxiosResponse<MessageResponse>> => {
 
 export const getAllAnimes = async (
   page: number,
-  perPage: number = 12
+  perPage: number = 12,
+  filters: {
+    genre?: string;
+    min_score?: number;
+    max_score?: number;
+    season?: string;
+    year?: number;
+    query?: string;
+  }
 ): Promise<AnimesListResponse> => {
   const response = await api.get(`${API_URL}/animes`, {
     params: {
       page,
       per_page: perPage,
+      ...filters,
     },
   });
   return response.data;
