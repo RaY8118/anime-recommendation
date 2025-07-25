@@ -38,12 +38,10 @@ const Home = () => {
 
   return (
     <div className="container mx-auto px-4 py-10">
-      {/* Hero Title */}
       <h1 className="mb-10 text-center text-5xl font-extrabold text-primary drop-shadow-lg">
         Welcome to NekoRec
       </h1>
 
-      {/* Anime of the Moment */}
       <section className="mb-16">
         <h2 className="mb-8 text-center text-4xl font-bold text-accent">
           Anime of the Moment
@@ -57,7 +55,6 @@ const Home = () => {
         )}
       </section>
 
-      {/* Top Rated Animes */}
       <section className="mb-16">
         <h2 className="mb-8 text-center text-4xl font-bold text-primary">
           Top Rated Animes
@@ -67,7 +64,6 @@ const Home = () => {
         {topRated && <TopRatedList animes={topRated} />}
       </section>
 
-      {/* Genre Highlights */}
       <section className="space-y-16">
         <GenreHighlights genre="Action" />
         <GenreHighlights genre="Romance" />

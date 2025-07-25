@@ -3,7 +3,6 @@ import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
 import "./App.css";
 
 import Footer from "./components/Footer";
-import { Loader } from "./components/Loader";
 import Navbar from "./components/Navbar";
 import AnimeDetails from "./pages/AnimeDetails";
 import Browse from "./pages/Browse";
@@ -12,6 +11,7 @@ import Home from "./pages/Home";
 import Recommendations from "./pages/Recommendations";
 import SuggestAnime from "./pages/SuggestAnime";
 import { pingServer } from "./services/api";
+import ThemeToggle from "./components/ThemeToggle";
 
 function App() {
   const { isLoading, isError, refetch } = useQuery({
@@ -24,11 +24,30 @@ function App() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-900">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white p-4">
         <div className="text-center">
-          <Loader />
-          <p className="text-white text-4xl font-extrabold mt-6">
-            Waking up server, please wait...
+          <div className="relative w-32 h-32 mx-auto mb-8">
+            <img
+              src="favicon.png"
+              alt="NekoRec Logo"
+              className="absolute inset-0 w-full h-full p-2"
+            />
+          </div>
+
+          <h1 className="text-5xl md:text-6xl font-extrabold mb-4 drop-shadow-lg ">
+            Waking up the NekoRec Server!
+          </h1>
+          <p className="text-xl md:text-2xl text-gray-300 mb-8 delay-100">
+            Please bear with us, this might take a moment...
+          </p>
+
+          <div className="mt-8 w-80 md:w-96 mx-auto bg-gray-700 rounded-full h-3 overflow-hidden shadow-lg">
+            <div className="animate-loadingBar bg-gradient-to-r from-primary to-blue-400 h-full w-full"></div>
+          </div>
+
+          <p className="text-sm text-gray-400 mt-4  delay-200">
+            (Our server is just stretching, almost ready to serve you purr-fect
+            content!)
           </p>
         </div>
       </div>

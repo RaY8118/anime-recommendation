@@ -13,12 +13,13 @@ const TopRatedList = ({ animes }: TopRatedListProps) => {
           <li key={anime.id}>
             <Link
               to={`/anime/${anime.title.romaji || anime.title.english}`}
-              className="flex items-center justify-between px-4 py-2 rounded-lg bg-gray-800 shadow-md hover:bg-gray-700 transition duration-300 ease-in-out hover:ring-2 hover:ring-blue-500 hover:ring-opacity-75"
+              className="flex items-center font-black justify-between px-4 py-2 rounded-lg bg-primary shadow-md hover:bg-secondary transition duration-300 ease-in-out hover:ring-2 hover:ring-blue-500 hover:ring-opacity-75"
             >
-              <span className="font-medium text-white">
-                {index + 1}. {anime.title.english || anime.title.romaji}
+              <span className="font-medium text-text-dark">
+                {index + 1}.{" "}
+                {anime.title.display_english || anime.title.display_romaji}
               </span>
-              <span className="text-sm text-gray-400">
+              <span className="text-sm text-text-light">
                 {anime.averageScore ? `${anime.averageScore}/100` : "N/A"}
               </span>
             </Link>

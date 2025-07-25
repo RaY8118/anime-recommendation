@@ -19,6 +19,7 @@ NekoRec is a full-stack web application designed to provide personalized anime r
 - **uv:** A fast Python package installer and resolver.
 - **Gemini Embeddings:** Used for generating vector embeddings of anime descriptions for content-based recommendations.
 - **MongoDB:** NoSQL database used for storing anime data and embeddings.
+- **Anilist API:** Data for anime is sourced from the Anilist API.
 - **Data Processing:** Custom scripts for fetching anime data, text cleaning, generating embeddings, and calculating similarity for recommendations.
 
 ### 🌐 Frontend
@@ -88,25 +89,31 @@ Follow these instructions to set up and run the project locally.
 ```
 .
 ├── .gitignore
-├── backend/                  # FastAPI backend application
-│   ├── app/                  # Main FastAPI application code
-│   │   ├── routers/          # API endpoints (e.g., animes)
-│   │   ├── schemas/          # Pydantic models for data validation
-│   │   └── utils/            # Utility functions (embeddings, similarity, data fetching)
-│   ├── fetch_anime.py        # Script for fetching and processing anime data
-│   ├── Dockerfile            # Docker configuration for the backend
-│   └── pyproject.toml        # Project configuration and dependencies (Poetry/Rye)
-├── frontend/                 # React/TypeScript frontend application
-│   ├── public/               # Static assets
-│   ├── src/                  # Frontend source code
-│   │   ├── components/       # Reusable React components
-│   │   ├── pages/            # Main application pages/views
-│   │   ├── services/         # API service integrations
-│   │   └── types/            # TypeScript type definitions
-│   ├── package.json          # Frontend dependencies and scripts
-│   ├── tailwind.config.js    # Tailwind CSS configuration
-│   └── vite.config.ts        # Vite build configuration
-└── README.md                 # This project README file
+├── backend/                      # FastAPI backend application
+│   ├── .python-version           # Specifies the exact Python version
+│   ├── .venv/                    # Python virtual environment
+│   ├── uv.lock                   # Lock file for `uv` dependency management
+│   ├── app/                      # Main FastAPI application code
+│   │   ├── routers/              # API endpoints (e.g., animes, ping)
+│   │   ├── schemas/              # Pydantic models for data validation
+│   │   └── utils/                # Utility functions (embeddings, similarity, data fetching, text cleaning)
+│   ├── fetch_anime.py            # Script for fetching and processing anime data
+│   ├── Dockerfile                # Docker configuration for the backend
+│   └── pyproject.toml            # Project configuration and dependencies (Poetry/Rye)
+├── frontend/                     # React/TypeScript frontend application
+│   ├── bun.lock                  # Lock file for Bun package manager
+│   ├── eslint.config.js          # ESLint configuration for code quality
+│   ├── public/                   # Static assets
+│   ├── src/                      # Frontend source code
+│   │   ├── components/           # Reusable React components
+│   │   ├── hooks/                # Custom React hooks
+│   │   ├── pages/                # Main application pages/views
+│   │   ├── services/             # API service integrations
+│   │   └── types/                # TypeScript type definitions
+│   ├── package.json              # Frontend dependencies and scripts
+│   ├── tailwind.config.js        # Tailwind CSS configuration
+│   └── vite.config.ts            # Vite build configuration
+└── README.md                     # This project README file
 ```
 
 ## 🚀 Deployment

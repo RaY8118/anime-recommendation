@@ -30,7 +30,7 @@ export const AnimeFilters = ({ filters, setFilters }: AnimeFiltersProps) => {
   };
 
   return (
-    <div className="mb-8 flex flex-wrap justify-center items-center gap-4 p-4 bg-gray-800 rounded-lg shadow-lg">
+    <div className="mb-8 flex flex-wrap justify-center items-center gap-4 p-4 bg-card rounded-lg shadow-lg">
       <input
         type="text"
         value={filters.searchQuery}
@@ -38,7 +38,7 @@ export const AnimeFilters = ({ filters, setFilters }: AnimeFiltersProps) => {
           setFilters((prev) => ({ ...prev, searchQuery: e.target.value }))
         }
         placeholder="Search Anime..."
-        className="flex-1 min-w-[180px] px-4 py-2 rounded-md bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 ease-in-out"
+        className="flex-1 min-w-[180px] px-4 py-2 rounded-md bg-background text-text-dark placeholder-text-light focus:outline-none focus:ring-2 focus:ring-primary transition duration-200 ease-in-out"
       />
 
       <select
@@ -49,7 +49,7 @@ export const AnimeFilters = ({ filters, setFilters }: AnimeFiltersProps) => {
             selectedGenre: e.target.value || undefined,
           }))
         }
-        className="flex-1 min-w-[180px] px-4 py-2 rounded-md bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 ease-in-out"
+        className="flex-1 min-w-[180px] px-4 py-2 rounded-md bg-background text-text-dark focus:outline-none focus:ring-2 focus:ring-primary transition duration-200 ease-in-out"
       >
         <option value="">All Genres</option>
         {genres.map((genre) => (
@@ -69,7 +69,7 @@ export const AnimeFilters = ({ filters, setFilters }: AnimeFiltersProps) => {
           }))
         }
         placeholder="Min Score"
-        className="flex-1 min-w-[120px] px-4 py-2 rounded-md bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 ease-in-out"
+                className="flex-1 min-w-[180px] px-4 py-2 rounded-md bg-background text-text-dark placeholder-text-light focus:outline-none focus:ring-2 focus:ring-primary transition duration-200 ease-in-out"
       />
 
       <input
@@ -82,7 +82,7 @@ export const AnimeFilters = ({ filters, setFilters }: AnimeFiltersProps) => {
           }))
         }
         placeholder="Max Score"
-        className="flex-1 min-w-[120px] px-4 py-2 rounded-md bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 ease-in-out"
+                className="flex-1 min-w-[180px] px-4 py-2 rounded-md bg-background text-text-dark placeholder-text-light focus:outline-none focus:ring-2 focus:ring-primary transition duration-200 ease-in-out"
       />
 
       <select
@@ -93,7 +93,7 @@ export const AnimeFilters = ({ filters, setFilters }: AnimeFiltersProps) => {
             season: e.target.value || undefined,
           }))
         }
-        className="flex-1 min-w-[180px] px-4 py-2 rounded-md bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 ease-in-out"
+        className="flex-1 min-w-[180px] px-4 py-2 rounded-md bg-background text-text-dark focus:outline-none focus:ring-2 focus:ring-primary transition duration-200 ease-in-out"
       >
         <option value="">All Seasons</option>
         <option value="WINTER">Winter</option>
@@ -112,11 +112,11 @@ export const AnimeFilters = ({ filters, setFilters }: AnimeFiltersProps) => {
           }))
         }
         placeholder="Year"
-        className="flex-1 min-w-[120px] px-4 py-2 rounded-md bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 ease-in-out"
+        className="flex-1 min-w-[120px] px-4 py-2 rounded-md bg-background text-text-dark placeholder-text-light focus:outline-none focus:ring-2 focus:ring-primary transition duration-200 ease-in-out"
       />
       <button
         onClick={handleClearFilters}
-        className="px-6 py-2 rounded-md bg-red-600 text-white font-semibold hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 transition duration-200 ease-in-out"
+        className="px-6 py-2 rounded-md bg-accent text-white font-semibold hover:bg-primary focus:outline-none focus:ring-2 focus:ring-accent transition duration-200 ease-in-out"
       >
         Clear
       </button>
