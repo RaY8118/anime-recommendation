@@ -11,7 +11,6 @@ import Home from "./pages/Home";
 import Recommendations from "./pages/Recommendations";
 import SuggestAnime from "./pages/SuggestAnime";
 import { pingServer } from "./services/api";
-import ThemeToggle from "./components/ThemeToggle";
 
 function App() {
   const { isLoading, isError, refetch } = useQuery({
