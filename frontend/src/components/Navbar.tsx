@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import ThemeToggle from "./ThemeToggle"; // Import ThemeToggle
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -18,10 +19,11 @@ const Navbar = () => {
           NekoRec
         </Link>
 
-        <div className="md:hidden">
+        <div className="flex items-center md:hidden"> {/* Group menu button and theme toggle for mobile */}
+          <ThemeToggle /> {/* Theme toggle for mobile */}
           <button
             onClick={toggleMenu}
-            className="rounded-md p-2 text-text-light focus:outline-none focus:ring-2 focus:ring-accent"
+            className="rounded-md p-2 text-text-light focus:outline-none focus:ring-2 focus:ring-accent ml-2"
           >
             <svg
               className="h-7 w-7"
@@ -80,6 +82,7 @@ const Navbar = () => {
           >
             Suggest Anime
           </Link>
+          <ThemeToggle /> {/* Theme toggle for desktop */}
         </div>
       </div>
 

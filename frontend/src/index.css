@@ -1,6 +1,32 @@
+@import url("https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap");
 @import "tailwindcss";
 
+body {
+  font-family: "Inter", sans-serif;
+}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: "Lora", serif;
+}
+
+/* Light Theme Variables (Default) */
 @theme {
+  --color-primary: #8fbedf;
+  --color-secondary: #a9d8b6;
+  --color-accent: #d9adec;
+  --color-background: #e6f0f6;
+  --color-card: #ffffff;
+  --color-text: #4a5568;
+  --color-text-light: #718096;
+  --color-text-dark: #2d3748;
+}
+
+/* Dark Theme Variables */
+html.dark {
   --color-primary: #6d28d9;
   --color-secondary: #f97316;
   --color-accent: #ec4899;
@@ -15,9 +41,22 @@
   body {
     @apply bg-background text-text font-sans;
     background: linear-gradient(
+      to bottom right,
+      var(--color-background),
+      color-mix(
+        in srgb,
+        var(--color-background) 85%,
+        var(--color-secondary)
+      )
+    );
+    animation: gradient-pulse 18s ease infinite alternate;
+  }
+
+  html.dark body {
+    background: linear-gradient(
       to right,
-      var(--tw-colors-background),
-      var(--tw-colors-card)
+      var(--color-background),
+      var(--color-card)
     );
     animation: gradient-pulse 10s ease infinite;
     background-size: 200% 200%;
@@ -57,5 +96,30 @@
 
   .detail-item {
     @apply text-lg;
+  }
+}
+
+@keyframes loadingBar {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-loadingBar {
+  animation: loadingBar 1.5s linear infinite;
+}
+
+@keyframes gradient-pulse {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
   }
 }
