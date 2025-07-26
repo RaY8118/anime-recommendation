@@ -5,13 +5,13 @@ from app.routers import animes, ping
 
 app = FastAPI()
 
-app.include_router(animes.router, prefix="/animes")
-app.include_router(ping.router, prefix="/ping")
+app.include_router(animes.router, prefix="/animes", tags=["animes"])
+app.include_router(ping.router, prefix="/ping", tags=["ping"])
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=["*"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )

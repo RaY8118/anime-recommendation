@@ -1,9 +1,9 @@
 from google import genai
-
+from typing import List, Optional
 client = genai.Client()
 
 
-async def generate_embeddings(text: str):
+async def generate_embeddings(text: str) -> Optional[List[float]]:
     try:
         response = client.models.embed_content(
             model="gemini-embedding-001",

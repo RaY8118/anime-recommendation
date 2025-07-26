@@ -5,8 +5,9 @@ from app.utils.embeddings import generate_embeddings
 from app.utils.similarity import cosine_similarity
 from app.utils.validate_params import validate_query_params
 from app.dependencies import db
-from app.schemas.animes import QueryMode, AnimeListResponse, AnimesListResponse, AnimeResponse, MessageResponse, GenresResponse
+from app.schemas.animes import QueryMode, AnimeListResponse, AnimesListResponse, AnimeResponse, MessageResponse, GenresResponse, ChatBotResponse, ChatBotRequest
 from app.utils.fetch_status import get_current_page, update_current_page
+from app.utils.chatbot import chatbot
 import random
 from typing import Optional
 router = APIRouter()
@@ -114,7 +115,6 @@ async def get_animes(
         mongo_query["seasonYear"] = year
 
     if query:
-        # 🔥 Add regex search for romaji or english title fields
         mongo_query["$or"] = [
             {"title.romaji": {"$regex": query, "$options": "i"}},
             {"title.english": {"$regex": query, "$options": "i"}}
@@ -325,3 +325,11 @@ async def get_anime_by_name_endpoint(anime_name: str):
     anime.pop("embedding", None)
 
     return {"anime": anime}
+
+
+@router.post("/chatbot", response_model=ChatBotResponse)
+async def Chatbot(request: ChatBotRequest):
+    results = await chatbot(request.message)
+    if not results:
+        raise HTTPException(status_code=404, detail="No results found")
+    return {"results": results}

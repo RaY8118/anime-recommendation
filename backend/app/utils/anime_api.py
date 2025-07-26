@@ -149,15 +149,22 @@ async def process_anime(anime):
     genres = anime.get('genres', [])
     genres_text = ', '.join(genres)
 
-    # Parse new fields safely
     anime['episodes'] = anime.get('episodes')
     anime['duration'] = anime.get('duration')
     anime['season'] = anime.get('season')
     anime['seasonYear'] = anime.get('seasonYear')
     anime['status'] = anime.get('status')
     anime['source'] = anime.get('source')
-    anime['studios'] = [studio['name']
-                        for studio in anime.get('studios', {}).get('nodes', [])]
+
+    studios_raw = anime.get('studios', [])
+    if isinstance(studios_raw, dict):
+        anime['studios'] = [studio['name']
+                            for studio in studios_raw.get('nodes', [])]
+    elif isinstance(studios_raw, list):
+        anime['studios'] = [studio['name']
+                            for studio in studios_raw if 'name' in studio]
+    else:
+        anime['studios'] = []
 
     final_text = f"Title: {title_romaji} ({title_english})\nDescription: {description_text}\nGenres: {genres_text}"
 

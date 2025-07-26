@@ -75,3 +75,11 @@ class QueryMode(str, Enum):
     anime_name = "anime_name"
     genre = "genre"
     description = "description"
+
+
+class ChatBotRequest(BaseModel):
+    message: str
+
+
+class ChatBotResponse(BaseModel):
+    results: str
