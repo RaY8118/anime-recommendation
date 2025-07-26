@@ -1,32 +1,29 @@
 import { useState, useEffect } from "react";
 
 const ThemeToggle = () => {
-  // Initialize theme from localStorage or default to 'light'
   const [theme, setTheme] = useState(() => {
     if (typeof window !== "undefined") {
       const savedTheme = localStorage.getItem("theme");
-      // Check for user's system preference if no theme saved
+
       if (savedTheme) {
         return savedTheme;
       } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
         return "dark";
       }
     }
-    return "light"; // Default to light if nothing is found
+    return "light";
   });
 
   useEffect(() => {
-    // Apply or remove the 'dark' class on the html element
     const html = document.documentElement;
     if (theme === "dark") {
       html.classList.add("dark");
     } else {
       html.classList.remove("dark");
     }
-    // Save theme preference to localStorage
-    localStorage.setItem("theme", theme);
-  }, [theme]); // Rerun when 'theme' state changes
 
+    localStorage.setItem("theme", theme);
+  }, [theme]);
   const toggleTheme = () => {
     setTheme((prevTheme) => (prevTheme === "light" ? "dark" : "light"));
   };
@@ -38,7 +35,6 @@ const ThemeToggle = () => {
       aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
     >
       {theme === "light" ? (
-        // Sun icon for light mode
         <svg
           xmlns="http://www.w3.org/2000/svg"
           className="h-5 w-5"
@@ -54,7 +50,6 @@ const ThemeToggle = () => {
           />
         </svg>
       ) : (
-        // Moon icon for dark mode
         <svg
           xmlns="http://www.w3.org/2000/svg"
           className="h-5 w-5"

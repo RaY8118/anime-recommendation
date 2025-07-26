@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
 import "./App.css";
 
+import ChatbotUi from "./components/Chatbot";
 import Footer from "./components/Footer";
 import Navbar from "./components/Navbar";
 import AnimeDetails from "./pages/AnimeDetails";
@@ -81,6 +82,7 @@ function App() {
             <Route path="/suggest" element={<SuggestAnime />} />
           </Routes>
         </main>
+        <ChatbotUi />
         <Footer />
       </div>
     </Router>

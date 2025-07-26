@@ -61,6 +61,10 @@ export type MessageResponse = {
   message: string;
 };
 
+export type ChatbotResponse = {
+  results: string;
+};
+
 export enum QueryMode {
   anime_name = "anime_name",
   genre = "genre",

@@ -7,6 +7,7 @@ import type {
   GenresResponse,
   MessageResponse,
   RecommendationsParams,
+  ChatbotResponse,
 } from "../types/anime";
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -113,4 +114,8 @@ export const getTopRated = async (
       limit: limit,
     },
   });
+};
+
+export const sendChatMessage = async (message: string): Promise<AxiosResponse<ChatbotResponse>> => {
+  return api.post(`${API_URL}/animes/chatbot`, { message });
 };

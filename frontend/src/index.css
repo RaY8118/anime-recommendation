@@ -43,11 +43,7 @@ html.dark {
     background: linear-gradient(
       to bottom right,
       var(--color-background),
-      color-mix(
-        in srgb,
-        var(--color-background) 85%,
-        var(--color-secondary)
-      )
+      color-mix(in srgb, var(--color-background) 85%, var(--color-secondary))
     );
     animation: gradient-pulse 18s ease infinite alternate;
   }
