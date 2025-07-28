@@ -1,5 +1,5 @@
 from app.utils.embeddings import generate_embeddings
-from app.utils.similarity import cosine_similarity
+import numpy as np
 from app.dependencies import db
 from app.utils.anime_api import process_anime
 from google import genai
@@ -16,33 +16,42 @@ async def chatbot(message: str):
     CONVERSATION_HISTORY.append({"role": "user", "message": message})
 
     message_embedding = await generate_embeddings(message)
-    animes = anime_collection.find({})
-    results = []
 
-    async for anime in animes:
-        anime_embedding = anime.get("embedding")
-        if anime_embedding:
-            score = cosine_similarity(message_embedding, anime_embedding)
-            results.append({
-                "id": anime['id'],
-                "title": anime['title'],
-                "description": anime['description'],
-                "averageScore": anime['averageScore'],
-                "genres": anime['genres'],
-                "episodes": anime['episodes'],
-                "duration": anime['duration'],
-                "season": anime['season'],
-                "seasonYear": anime['seasonYear'],
-                "status": anime['status'],
-                "source": anime['source'],
-                "studios": anime['studios'],
-                "coverImage": anime['coverImage'],
-                "score": float(score)
-            })
+    if isinstance(message_embedding, np.ndarray):
+        message_embedding = message_embedding.tolist()
+    pipeline = [
+        {
+            "$vectorSearch": {
+                "index": "embeddings_vector_index",
+                "path": "embedding",
+                "queryVector": message_embedding,
+                "numCandidates": 100,
+                "limit": 5
+            }
+        },
+        {
+            "$project": {
+                "_id": 0,
+                "id": 1,
+                "title": 1,
+                "description": 1,
+                "averageScore": 1,
+                "genres": 1,
+                "episodes": 1,
+                "duration": 1,
+                "season": 1,
+                "seasonYear": 1,
+                "status": 1,
+                "source": 1,
+                "studios": 1,
+                "coverImage": 1,
+                "score": {"$meta": "vectorSearchScore"}
+            }
+        }
+    ]
 
-    if results:
-        results.sort(key=lambda x: x['score'], reverse=True)
-        results = results[:5]
+    cursor = await anime_collection.aggregate(pipeline)
+    results = [doc async for doc in cursor]
 
     processed_animes = []
     for anime in results:

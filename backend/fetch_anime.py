@@ -5,7 +5,7 @@ API_URL = "http://localhost:8000/animes/fetch"  # Change to your correct endpoin
 INTERVAL_SECONDS = 15  # Time gap between calls
 START_PAGE = 1
 PER_PAGE = 10  # Adjust per your API
-MAX_PAGES = 10  # ✅ stop after 50 pages
+MAX_PAGES = 9  # ✅ stop after 50 pages
 
 
 def fetch_anime(page, per_page):

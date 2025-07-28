@@ -2,14 +2,16 @@ from fastapi import Query
 from fastapi import APIRouter, HTTPException, status, Request, Query
 from app.utils.anime_api import get_anime, get_anime_by_name
 from app.utils.embeddings import generate_embeddings
-from app.utils.similarity import cosine_similarity
 from app.utils.validate_params import validate_query_params
 from app.dependencies import db
 from app.schemas.animes import QueryMode, AnimeListResponse, AnimesListResponse, AnimeResponse, MessageResponse, GenresResponse, ChatBotResponse, ChatBotRequest
 from app.utils.fetch_status import get_current_page, update_current_page
 from app.utils.chatbot import chatbot
 import random
+import numpy as np
 from typing import Optional
+
+
 router = APIRouter()
 anime_collection = db.animes
 
@@ -31,6 +33,7 @@ async def fetch_animes(request: Request, perPage: int = 1):
 @router.post("/recommendations", response_model=AnimeListResponse)
 async def recommend_anime(request: Request, query: str, mode: QueryMode = QueryMode.description, top_k: int = 5):
     validate_query_params(request, {"query", "mode", "top_k"})
+
     if mode == QueryMode.anime_name:
         anime = await anime_collection.find_one({
             "$or": [
@@ -44,43 +47,50 @@ async def recommend_anime(request: Request, query: str, mode: QueryMode = QueryM
 
     elif mode == QueryMode.genre:
         user_embedding = await generate_embeddings(f"Genres: {query}")
-
     else:
         user_embedding = await generate_embeddings(query)
 
-    animes = anime_collection.find({})
-    results = []
+    if isinstance(user_embedding, np.ndarray):
+        user_embedding = user_embedding.tolist()
 
-    async for anime in animes:
-        anime_embedding = anime.get("embedding")
-        if anime_embedding:
-            score = cosine_similarity(user_embedding, anime_embedding)
-            results.append({
-                "id": anime['id'],
-                "title": anime['title'],
-                "description": anime['description'],
-                "averageScore": anime['averageScore'],
-                "genres": anime['genres'],
-                "episodes": anime['episodes'],
-                "duration": anime['duration'],
-                "season": anime['season'],
-                "seasonYear": anime['seasonYear'],
-                "status": anime['status'],
-                "source": anime['source'],
-                "studios": anime['studios'],
-                "coverImage": anime['coverImage'],
-                "score": float(score)
-            })
+    pipeline = [
+        {
+            "$vectorSearch": {
+                "index": "embeddings_vector_index",
+                "path": "embedding",
+                "queryVector": user_embedding,
+                "numCandidates": 100,
+                "limit": top_k
+            }
+        },
+        {
+            "$project": {
+                "_id": 0,
+                "id": 1,
+                "title": 1,
+                "description": 1,
+                "averageScore": 1,
+                "genres": 1,
+                "episodes": 1,
+                "duration": 1,
+                "season": 1,
+                "seasonYear": 1,
+                "status": 1,
+                "source": 1,
+                "studios": 1,
+                "coverImage": 1,
+                "score": {"$meta": "vectorSearchScore"}
+            }
+        }
+    ]
+
+    cursor = await anime_collection.aggregate(pipeline)
+    results = [doc async for doc in cursor]
 
     if not results:
         raise HTTPException(status_code=404, detail="No similar animes found")
 
-    results.sort(key=lambda x: x['score'], reverse=True)
-
-    for anime in results:
-        anime.pop("score", None)
-
-    return {"results": results[:top_k]}
+    return {"results": results}
 
 
 @router.get("", response_model=AnimesListResponse)
