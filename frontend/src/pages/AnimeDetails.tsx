@@ -68,9 +68,7 @@ const AnimeDetails = () => {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div className="detail-item">
               <strong className="text-secondary">Genres:</strong>{" "}
-              <span className="text-text-light">
-                {anime.genres.join(", ")}
-              </span>
+              <span className="text-text-light">{anime.genres.join(", ")}</span>
             </div>
             <div className="detail-item">
               <strong className="text-secondary">Average Score:</strong>{" "}
