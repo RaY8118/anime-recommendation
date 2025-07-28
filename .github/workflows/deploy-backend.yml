@@ -1,0 +1,28 @@
+name: Build & Deploy Backend to Render
+
+on:
+  push:
+    branches: [main] 
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Log in to Docker Hub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      - name: Build Docker image from ./backend
+        run: |
+          docker build -t ray8118/anime-recommendations:latest ./backend
+
+      - name: Push Docker image to Docker Hub
+        run: |
+          docker push ray8118/anime-recommendations:latest
+
+      - name: Trigger Render Deploy
+        run: |
+          curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
+
