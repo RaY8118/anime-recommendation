@@ -2,7 +2,15 @@ name: Build & Deploy Backend to Render
 
 on:
   push:
-    branches: [master] 
+    branches: [master]
+    paths:
+      - "backend/**"
+  pull_request:
+    branches: [master]
+    paths:
+      - "backend/**"
+  workflow_dispatch:
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -25,4 +33,3 @@ jobs:
       - name: Trigger Render Deploy
         run: |
           curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
-
