@@ -92,7 +92,7 @@ async def chatbot(message: str):
         contents=context_parts
     )
 
-    reply = response.text if response.text else "I'm here to help, but I didn’t understand that."
+    reply = response.text if response.text else "I'm here to help, but I didn't understand that."
 
     CONVERSATION_HISTORY.append({"role": "bot", "message": reply})
 

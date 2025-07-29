@@ -2,7 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import axios from "axios";
 import { useState } from "react";
 import { IoChatbubbleEllipsesOutline, IoCloseOutline } from "react-icons/io5";
-
+import ReactMarkdown from "react-markdown";
 import { sendChatMessage } from "../services/api";
 
 const ChatbotUi = () => {
@@ -45,9 +45,12 @@ const ChatbotUi = () => {
   };
 
   return (
-    <div className="fixed bottom-4 right-4 z-50">
+    <div className="fixed bottom-4 right-8 z-50">
       {isOpen && (
-        <div className="bg-card dark:bg-card rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 w-80 md:w-96 flex flex-col max-h-[80vh]">
+        <div
+          className="resize-y overflow-auto bg-card dark:bg-card rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 w-80 md:w-96 max-h-[80vh] min-h-[200px] flex flex-col"
+          style={{ resize: "both", minWidth: "320px" }}
+        >
           <div className="flex justify-between items-center p-3 border-b border-gray-200 dark:border-gray-700 bg-primary rounded-t-lg">
             <h3 className="text-lg font-semibold text-text">NekoRec Chatbot</h3>
             <div className="flex items-center gap-2">
@@ -84,7 +87,7 @@ const ChatbotUi = () => {
                       : "bg-card text-text dark:text-textLight"
                   }`}
                 >
-                  {msg.text}
+                  <ReactMarkdown>{msg.text}</ReactMarkdown>
                 </span>
               </div>
             ))}
