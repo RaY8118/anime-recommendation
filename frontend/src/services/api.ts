@@ -19,7 +19,7 @@ const api = axios.create({
 });
 
 export const pingServer = async (): Promise<AxiosResponse<MessageResponse>> => {
-  return api.get(`${API_URL}/ping`);
+  return api.get(`${API_URL}/v1/ping`);
 };
 
 export const getAllAnimes = async (
@@ -34,7 +34,7 @@ export const getAllAnimes = async (
     query?: string;
   }
 ): Promise<AnimesListResponse> => {
-  const response = await api.get(`${API_URL}/animes`, {
+  const response = await api.get(`${API_URL}/v1/animes`, {
     params: {
       page,
       per_page: perPage,
@@ -47,13 +47,13 @@ export const getAllAnimes = async (
 export const getAnimeByName = async (
   name: string
 ): Promise<AxiosResponse<AnimeResponse>> => {
-  return api.get(`${API_URL}/animes/${name}`);
+  return api.get(`${API_URL}/v1/animes/${name}`);
 };
 
 export const getRecommendations = async (
   recommendations: RecommendationsParams
 ): Promise<AxiosResponse<AnimeListResponse>> => {
-  return api.post(`${API_URL}/animes/recommendations`, null, {
+  return api.post(`${API_URL}/v1/animes/recommendations`, null, {
     params: {
       query: recommendations.query,
       mode: recommendations.mode,
@@ -63,7 +63,7 @@ export const getRecommendations = async (
 };
 
 export const getGenres = async (): Promise<AxiosResponse<GenresResponse>> => {
-  return api.get(`${API_URL}/animes/genres`);
+  return api.get(`${API_URL}/v1/animes/genres`);
 };
 
 export const filterByGenre = async (
@@ -71,7 +71,7 @@ export const filterByGenre = async (
   page = 1,
   limit = 10
 ): Promise<AxiosResponse<AnimeListResponse>> => {
-  return api.get(`${API_URL}/animes/filter`, {
+  return api.get(`${API_URL}/v1/animes/filter`, {
     params: {
       genre,
       page,
@@ -83,7 +83,7 @@ export const filterByGenre = async (
 export const searchAnime = async (
   query: string
 ): Promise<AxiosResponse<AnimeListResponse>> => {
-  return api.get(`${API_URL}/animes/search`, {
+  return api.get(`${API_URL}/v1/animes/search`, {
     params: {
       query: query,
     },
@@ -93,7 +93,7 @@ export const searchAnime = async (
 export const suggestAnime = async (
   anime_name: string
 ): Promise<AxiosResponse<MessageResponse>> => {
-  return api.post(`${API_URL}/animes/suggestions`, null, {
+  return api.post(`${API_URL}/v1/animes/suggestions`, null, {
     params: {
       anime_name: anime_name,
     },
@@ -103,19 +103,21 @@ export const suggestAnime = async (
 export const getRandomAnime = async (): Promise<
   AxiosResponse<AnimeResponse>
 > => {
-  return api.get(`${API_URL}/animes/random`);
+  return api.get(`${API_URL}/v1/animes/random`);
 };
 
 export const getTopRated = async (
   limit: number
 ): Promise<AxiosResponse<AnimeListResponse>> => {
-  return api.get(`${API_URL}/animes/top-rated`, {
+  return api.get(`${API_URL}/v1/animes/top-rated`, {
     params: {
       limit: limit,
     },
   });
 };
 
-export const sendChatMessage = async (message: string): Promise<AxiosResponse<ChatbotResponse>> => {
-  return api.post(`${API_URL}/animes/chatbot`, { message });
+export const sendChatMessage = async (
+  message: string
+): Promise<AxiosResponse<ChatbotResponse>> => {
+  return api.post(`${API_URL}/v1/animes/chatbot`, { message });
 };
