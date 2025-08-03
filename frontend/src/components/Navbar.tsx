@@ -1,131 +1,167 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import ThemeToggle from "./ThemeToggle"; // Import ThemeToggle
+import { motion, AnimatePresence } from "framer-motion";
+import { useMediaQuery } from "../hooks/useMediaQuery"; // new path
+import ThemeToggle from "./ThemeToggle";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const isDesktop = useMediaQuery("(min-width: 768px)");
 
-  const toggleMenu = () => {
-    setIsOpen(!isOpen);
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const toggleMenu = () => setIsOpen(!isOpen);
+  const closeMenu = () => setIsOpen(false);
+
+  //animation logic
+
+  const navContainerVariants = {
+    top: {
+      width: "100%",
+      borderRadius: "0px",
+      marginTop: "0rem",
+      borderBottom: "1px solid rgba(168, 85, 247, 0.4)",
+    },
+    scrolled: {
+      width: isDesktop ? "72rem" : "95%",
+      borderRadius: isDesktop ? "9999px" : "2rem",
+      marginTop: "1rem",
+      borderBottom: "2px solid rgba(168, 85, 247, 0.6)",
+    },
+  };
+
+
+  const mobileMenuVariants = {
+    hidden: { 
+      opacity: 0, 
+      y: -20,
+    },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: {
+        opacity: { duration: 0.3 },
+        y: { duration: 0.3 },
+      }
+    },
+    exit: { 
+      opacity: 0, 
+      y: -20,
+      transition: {
+        opacity: { duration: 0.2 },
+        y: { duration: 0.2 },
+      }
+    },
+  };
+
+ 
+  const dropdownContainerVariants = {
+    hidden: {
+      backdropFilter: "blur(0px)",
+    },
+    visible: {
+      backdropFilter: "blur(16px)",
+      transition: {
+        backdropFilter: { duration: 0.4, delay: 0.2 }
+      }
+    },
+    exit: {
+      backdropFilter: "blur(0px)",
+      transition: {
+        backdropFilter: { duration: 0.1 }
+      }
+    },
   };
 
   return (
-    <nav className="bg-card text-text px-4 py-3 shadow-lg md:px-6">
-      <div className="container mx-auto flex items-center justify-between">
-        <Link
-          to="/"
-          className="text-3xl font-extrabold text-primary transition-colors duration-300 hover:text-accent"
+    <>
+      <nav className="sticky top-0 z-50 w-full overflow-x-hidden">
+        <motion.div
+          variants={navContainerVariants}
+          animate={isScrolled ? "scrolled" : "top"}
+          transition={{ duration: 0.4, ease: "easeInOut" }}
+          className="mx-auto bg-black/30 backdrop-blur-lg border-b md:border border-white/10"
         >
-          NekoRec
-        </Link>
+          <div className="flex items-center justify-between w-full mx-auto px-6 md:px-8 py-4">
+            <Link to="/" onClick={closeMenu} className="flex items-center space-x-3">
+              <span className="text-3xl font-extrabold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent transition-opacity duration-300 hover:opacity-80">
+                NekoRec
+              </span>
+            </Link>
 
-        <div className="flex items-center md:hidden"> {/* Group menu button and theme toggle for mobile */}
-          <ThemeToggle /> {/* Theme toggle for mobile */}
-          <button
-            onClick={toggleMenu}
-            className="rounded-md p-2 text-text-light focus:outline-none focus:ring-2 focus:ring-accent ml-2"
+            {isDesktop && (
+              <div className="flex items-center space-x-6">
+                <Link to="/" className="text-text-light transition-colors duration-300 hover:text-primary text-lg font-medium">Home</Link>
+                <Link to="/browse" className="text-text-light transition-colors duration-300 hover:text-primary text-lg font-medium">Animes</Link>
+                <Link to="/recommendations" className="text-text-light transition-colors duration-300 hover:text-primary text-lg font-medium">Recommendations</Link>
+                <Link to="/genres" className="text-text-light transition-colors duration-300 hover:text-primary text-lg font-medium">Genres</Link>
+                <Link to="/suggest" className="text-text-light transition-colors duration-300 hover:text-primary text-lg font-medium">Suggest Anime</Link>
+                <ThemeToggle />
+              </div>
+            )}
+
+            {!isDesktop && (
+              <div className="flex items-center">
+                <ThemeToggle />
+                <button onClick={toggleMenu} className="rounded-md p-2 text-text-light focus:outline-none ml-2" aria-label="Toggle Menu">
+                  <svg className="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    {isOpen ? (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                    ) : (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+                    )}
+                  </svg>
+                </button>
+              </div>
+            )}
+          </div>
+        </motion.div>
+      </nav>
+
+      {/* mobiledropdown */}
+      <AnimatePresence>
+        {isOpen && !isDesktop && (
+          <motion.div
+            variants={mobileMenuVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            className="fixed left-1/2 transform -translate-x-1/2 z-40 px-4"
+            style={{
+              top: isScrolled ? '6rem' : '5rem', 
+              width: isScrolled ? '95%' : '100%', 
+              maxWidth: isScrolled ? '72rem' : '100%', 
+            }}
           >
-            <svg
-              className="h-7 w-7"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
+            <motion.div 
+              variants={dropdownContainerVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className="p-5 bg-black/40 border border-white/10 rounded-2xl mx-auto"
+              style={{
+                borderRadius: isScrolled ? '2rem' : '1.5rem', 
+              }}
             >
-              {isOpen ? (
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M6 18L18 6M6 6l12 12"
-                ></path>
-              ) : (
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M4 6h16M4 12h16M4 18h16"
-                ></path>
-              )}
-            </svg>
-          </button>
-        </div>
-
-        <div className="hidden md:flex items-center space-x-6">
-          <Link
-            to="/"
-            className="text-text-light transition-colors duration-300 hover:text-primary text-lg font-medium"
-          >
-            Home
-          </Link>
-          <Link
-            to="/browse"
-            className="text-text-light transition-colors duration-300 hover:text-primary text-lg font-medium"
-          >
-            Animes
-          </Link>
-          <Link
-            to="/recommendations"
-            className="text-text-light transition-colors duration-300 hover:text-primary text-lg font-medium"
-          >
-            Recommendations
-          </Link>
-          <Link
-            to="/genres"
-            className="text-text-light transition-colors duration-300 hover:text-primary text-lg font-medium"
-          >
-            Genres
-          </Link>
-          <Link
-            to="/suggest"
-            className="text-text-light transition-colors duration-300 hover:text-primary text-lg font-medium"
-          >
-            Suggest Anime
-          </Link>
-          <ThemeToggle /> {/* Theme toggle for desktop */}
-        </div>
-      </div>
-
-      {isOpen && (
-        <div className="md:hidden bg-card py-3 shadow-inner">
-          <Link
-            to="/"
-            className="block px-5 py-3 text-base text-text-light transition-colors duration-300 hover:bg-background hover:text-primary"
-            onClick={toggleMenu}
-          >
-            Home
-          </Link>
-          <Link
-            to="/browse"
-            className="block px-5 py-3 text-base text-text-light transition-colors duration-300 hover:bg-background hover:text-primary"
-            onClick={toggleMenu}
-          >
-            Animes
-          </Link>
-          <Link
-            to="/recommendations"
-            className="block px-5 py-3 text-base text-text-light transition-colors duration-300 hover:bg-background hover:text-primary"
-            onClick={toggleMenu}
-          >
-            Recommendations
-          </Link>
-          <Link
-            to="/genres"
-            className="block px-5 py-3 text-base text-text-light transition-colors duration-300 hover:bg-background hover:text-primary"
-            onClick={toggleMenu}
-          >
-            Genres
-          </Link>
-          <Link
-            to="/suggest"
-            className="block px-5 py-3 text-base text-text-light transition-colors duration-300 hover:bg-background hover:text-primary"
-            onClick={toggleMenu}
-          >
-            Suggest Anime
-          </Link>
-        </div>
-      )}
-    </nav>
+              <div className="flex flex-col space-y-5 items-center">
+                <Link to="/" className="block py-2 text-base text-text-light transition-colors duration-300 hover:text-primary" onClick={toggleMenu}>Home</Link>
+                <Link to="/browse" className="block py-2 text-base text-text-light transition-colors duration-300 hover:text-primary" onClick={toggleMenu}>Animes</Link>
+                <Link to="/recommendations" className="block py-2 text-base text-text-light transition-colors duration-300 hover:text-primary" onClick={toggleMenu}>Recommendations</Link>
+                <Link to="/genres" className="block py-2 text-base text-text-light transition-colors duration-300 hover:text-primary" onClick={toggleMenu}>Genres</Link>
+                <Link to="/suggest" className="block py-2 text-base text-text-light transition-colors duration-300 hover:text-primary" onClick={toggleMenu}>Suggest Anime</Link>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 };
 
