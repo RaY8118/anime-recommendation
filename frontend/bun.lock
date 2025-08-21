@@ -4,6 +4,7 @@
     "": {
       "name": "frontend",
       "dependencies": {
+        "@auth0/auth0-react": "^2.4.0",
         "@tailwindcss/vite": "^4.1.11",
         "@tanstack/react-query": "^5.83.0",
         "axios": "^1.10.0",
@@ -32,6 +33,10 @@
   },
   "packages": {
     "@ampproject/remapping": ["@ampproject/remapping@2.3.0", "", { "dependencies": { "@jridgewell/gen-mapping": "^0.3.5", "@jridgewell/trace-mapping": "^0.3.24" } }, "sha512-30iZtAPgz+LTIYoeivqYo853f02jBYSd5uGnGpkFV0M3xOt9aN73erkgYAmZU43x4VfqcnLxW9Kpg3R5LC4YYw=="],
+
+    "@auth0/auth0-react": ["@auth0/auth0-react@2.4.0", "", { "dependencies": { "@auth0/auth0-spa-js": "^2.2.0" }, "peerDependencies": { "react": "^16.11.0 || ^17 || ^18 || ^19", "react-dom": "^16.11.0 || ^17 || ^18 || ^19" } }, "sha512-5bt3sO9FVupNM15IpqyYu/2OPHpLI5El7RgWLQXZOPbnCBbtl+VgdHR+H2NfhNQ4SqQtC/5uKbHWafcVcsxkiw=="],
+
+    "@auth0/auth0-spa-js": ["@auth0/auth0-spa-js@2.3.0", "", {}, "sha512-zAW6w79UO+G1+3AxboVQIUIZy05xluSOb1ymGg2dqG0pIi0JxEtZGec05BOf2LJ9SehzW4WeCYUQsYD9BjrVpQ=="],
 
     "@babel/code-frame": ["@babel/code-frame@7.27.1", "", { "dependencies": { "@babel/helper-validator-identifier": "^7.27.1", "js-tokens": "^4.0.0", "picocolors": "^1.1.1" } }, "sha512-cjQ7ZlQ0Mv3b47hABuTevyTuYN4i+loJKGeV9flcCgIK37cCXRh+L1bd3iBHlynerhQ7BhCkn2BPbQUL+rGqFg=="],
 

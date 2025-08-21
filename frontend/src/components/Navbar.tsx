@@ -3,11 +3,13 @@ import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 import ThemeToggle from "./ThemeToggle";
+import { useAuth0 } from "@auth0/auth0-react";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const isDesktop = useMediaQuery("(min-width: 768px)");
+  const { isAuthenticated, loginWithRedirect, logout, user } = useAuth0();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -128,6 +130,28 @@ const Navbar = () => {
                 >
                   Suggest Anime
                 </Link>
+                {!isAuthenticated ? (
+                  <button
+                    onClick={() => loginWithRedirect()}
+                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                  >
+                    Login
+                  </button>
+                ) : (
+                  <>
+                    <span className="mr-4">Hello, {user?.nickname}</span>
+                    <button
+                      onClick={() =>
+                        logout({
+                          logoutParams: { returnTo: window.location.origin },
+                        })
+                      }
+                      className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+                    >
+                      Logout
+                    </button>
+                  </>
+                )}
                 <ThemeToggle />
               </div>
             )}
@@ -230,6 +254,32 @@ const Navbar = () => {
                 >
                   Suggest Anime
                 </Link>
+                {!isAuthenticated ? (
+                  <button
+                    onClick={() => {
+                      loginWithRedirect();
+                      toggleMenu();
+                    }}
+                    className="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                  >
+                    Login
+                  </button>
+                ) : (
+                  <>
+                    <span className="text-text-light">Hello, {user?.nickname}</span>
+                    <button
+                      onClick={() => {
+                        logout({
+                          logoutParams: { returnTo: window.location.origin },
+                        });
+                        toggleMenu();
+                      }}
+                      className="w-full bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+                    >
+                      Logout
+                    </button>
+                  </>
+                )}
               </div>
             </motion.div>
           </motion.div>

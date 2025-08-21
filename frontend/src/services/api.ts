@@ -4,10 +4,10 @@ import type {
   AnimeListResponse,
   AnimeResponse,
   AnimesListResponse,
+  ChatbotResponse,
   GenresResponse,
   MessageResponse,
   RecommendationsParams,
-  ChatbotResponse,
 } from "../types/anime";
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -20,6 +20,16 @@ const api = axios.create({
 
 export const pingServer = async (): Promise<AxiosResponse<MessageResponse>> => {
   return api.get(`${API_URL}/v1/ping`);
+};
+
+export const pingPrivateServer = async (
+  token: string
+): Promise<AxiosResponse<MessageResponse>> => {
+  return axios.get(`${API_URL}/v1/ping/private`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
 };
 
 export const getAllAnimes = async (
