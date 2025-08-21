@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { useMediaQuery } from "../hooks/useMediaQuery"; // new path
+import { useMediaQuery } from "../hooks/useMediaQuery";
 import ThemeToggle from "./ThemeToggle";
 
 const Navbar = () => {
@@ -20,8 +20,6 @@ const Navbar = () => {
   const toggleMenu = () => setIsOpen(!isOpen);
   const closeMenu = () => setIsOpen(false);
 
-  //animation logic
-
   const navContainerVariants = {
     top: {
       width: "100%",
@@ -37,31 +35,29 @@ const Navbar = () => {
     },
   };
 
-
   const mobileMenuVariants = {
-    hidden: { 
-      opacity: 0, 
+    hidden: {
+      opacity: 0,
       y: -20,
     },
-    visible: { 
-      opacity: 1, 
+    visible: {
+      opacity: 1,
       y: 0,
       transition: {
         opacity: { duration: 0.3 },
         y: { duration: 0.3 },
-      }
+      },
     },
-    exit: { 
-      opacity: 0, 
+    exit: {
+      opacity: 0,
       y: -20,
       transition: {
         opacity: { duration: 0.2 },
         y: { duration: 0.2 },
-      }
+      },
     },
   };
 
- 
   const dropdownContainerVariants = {
     hidden: {
       backdropFilter: "blur(0px)",
@@ -69,14 +65,14 @@ const Navbar = () => {
     visible: {
       backdropFilter: "blur(16px)",
       transition: {
-        backdropFilter: { duration: 0.4, delay: 0.2 }
-      }
+        backdropFilter: { duration: 0.4, delay: 0.2 },
+      },
     },
     exit: {
       backdropFilter: "blur(0px)",
       transition: {
-        backdropFilter: { duration: 0.1 }
-      }
+        backdropFilter: { duration: 0.1 },
+      },
     },
   };
 
@@ -90,7 +86,11 @@ const Navbar = () => {
           className="mx-auto bg-black/30 backdrop-blur-lg border-b md:border border-white/10"
         >
           <div className="flex items-center justify-between w-full mx-auto px-6 md:px-8 py-4">
-            <Link to="/" onClick={closeMenu} className="flex items-center space-x-3">
+            <Link
+              to="/"
+              onClick={closeMenu}
+              className="flex items-center space-x-3"
+            >
               <span className="text-3xl font-extrabold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent transition-opacity duration-300 hover:opacity-80">
                 NekoRec
               </span>
@@ -98,11 +98,36 @@ const Navbar = () => {
 
             {isDesktop && (
               <div className="flex items-center space-x-6">
-                <Link to="/" className="text-text-light transition-colors duration-300 hover:text-primary text-lg font-medium">Home</Link>
-                <Link to="/browse" className="text-text-light transition-colors duration-300 hover:text-primary text-lg font-medium">Animes</Link>
-                <Link to="/recommendations" className="text-text-light transition-colors duration-300 hover:text-primary text-lg font-medium">Recommendations</Link>
-                <Link to="/genres" className="text-text-light transition-colors duration-300 hover:text-primary text-lg font-medium">Genres</Link>
-                <Link to="/suggest" className="text-text-light transition-colors duration-300 hover:text-primary text-lg font-medium">Suggest Anime</Link>
+                <Link
+                  to="/"
+                  className="text-text-light transition-colors duration-300 hover:text-primary text-lg font-medium"
+                >
+                  Home
+                </Link>
+                <Link
+                  to="/browse"
+                  className="text-text-light transition-colors duration-300 hover:text-primary text-lg font-medium"
+                >
+                  Animes
+                </Link>
+                <Link
+                  to="/recommendations"
+                  className="text-text-light transition-colors duration-300 hover:text-primary text-lg font-medium"
+                >
+                  Recommendations
+                </Link>
+                <Link
+                  to="/genres"
+                  className="text-text-light transition-colors duration-300 hover:text-primary text-lg font-medium"
+                >
+                  Genres
+                </Link>
+                <Link
+                  to="/suggest"
+                  className="text-text-light transition-colors duration-300 hover:text-primary text-lg font-medium"
+                >
+                  Suggest Anime
+                </Link>
                 <ThemeToggle />
               </div>
             )}
@@ -110,12 +135,31 @@ const Navbar = () => {
             {!isDesktop && (
               <div className="flex items-center">
                 <ThemeToggle />
-                <button onClick={toggleMenu} className="rounded-md p-2 text-text-light focus:outline-none ml-2" aria-label="Toggle Menu">
-                  <svg className="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button
+                  onClick={toggleMenu}
+                  className="rounded-md p-2 text-text-light focus:outline-none ml-2"
+                  aria-label="Toggle Menu"
+                >
+                  <svg
+                    className="h-7 w-7"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
                     {isOpen ? (
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M6 18L18 6M6 6l12 12"
+                      ></path>
                     ) : (
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M4 6h16M4 12h16m-7 6h7"
+                      ></path>
                     )}
                   </svg>
                 </button>
@@ -135,27 +179,57 @@ const Navbar = () => {
             exit="exit"
             className="fixed left-1/2 transform -translate-x-1/2 z-40 px-4"
             style={{
-              top: isScrolled ? '6rem' : '5rem', 
-              width: isScrolled ? '95%' : '100%', 
-              maxWidth: isScrolled ? '72rem' : '100%', 
+              top: isScrolled ? "6rem" : "5rem",
+              width: isScrolled ? "95%" : "100%",
+              maxWidth: isScrolled ? "72rem" : "100%",
             }}
           >
-            <motion.div 
+            <motion.div
               variants={dropdownContainerVariants}
               initial="hidden"
               animate="visible"
               exit="exit"
               className="p-5 bg-black/40 border border-white/10 rounded-2xl mx-auto"
               style={{
-                borderRadius: isScrolled ? '2rem' : '1.5rem', 
+                borderRadius: isScrolled ? "2rem" : "1.5rem",
               }}
             >
               <div className="flex flex-col space-y-5 items-center">
-                <Link to="/" className="block py-2 text-base text-text-light transition-colors duration-300 hover:text-primary" onClick={toggleMenu}>Home</Link>
-                <Link to="/browse" className="block py-2 text-base text-text-light transition-colors duration-300 hover:text-primary" onClick={toggleMenu}>Animes</Link>
-                <Link to="/recommendations" className="block py-2 text-base text-text-light transition-colors duration-300 hover:text-primary" onClick={toggleMenu}>Recommendations</Link>
-                <Link to="/genres" className="block py-2 text-base text-text-light transition-colors duration-300 hover:text-primary" onClick={toggleMenu}>Genres</Link>
-                <Link to="/suggest" className="block py-2 text-base text-text-light transition-colors duration-300 hover:text-primary" onClick={toggleMenu}>Suggest Anime</Link>
+                <Link
+                  to="/"
+                  className="block py-2 text-base text-text-light transition-colors duration-300 hover:text-primary"
+                  onClick={toggleMenu}
+                >
+                  Home
+                </Link>
+                <Link
+                  to="/browse"
+                  className="block py-2 text-base text-text-light transition-colors duration-300 hover:text-primary"
+                  onClick={toggleMenu}
+                >
+                  Animes
+                </Link>
+                <Link
+                  to="/recommendations"
+                  className="block py-2 text-base text-text-light transition-colors duration-300 hover:text-primary"
+                  onClick={toggleMenu}
+                >
+                  Recommendations
+                </Link>
+                <Link
+                  to="/genres"
+                  className="block py-2 text-base text-text-light transition-colors duration-300 hover:text-primary"
+                  onClick={toggleMenu}
+                >
+                  Genres
+                </Link>
+                <Link
+                  to="/suggest"
+                  className="block py-2 text-base text-text-light transition-colors duration-300 hover:text-primary"
+                  onClick={toggleMenu}
+                >
+                  Suggest Anime
+                </Link>
               </div>
             </motion.div>
           </motion.div>
