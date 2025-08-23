@@ -1,12 +1,14 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import animes, ping
+from app.routers import animes, ping, watchlist
 
 app = FastAPI()
 
 app.include_router(animes.router, prefix="/v1/animes", tags=["animes"])
 app.include_router(ping.router, prefix="/v1/ping", tags=["ping"])
+app.include_router(watchlist.router, prefix="/v1/watchlist",
+                   tags=["watchlist"])
 
 app.add_middleware(
     CORSMiddleware,

@@ -40,3 +40,10 @@ def get_current_user(
             detail="Invalid or expired token",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+
+def get_current_user_id(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)):
+    claims = get_current_user(credentials)
+    user_id = claims.get("sub")
+    print("✅ USER ID:", user_id)
+    return user_id
