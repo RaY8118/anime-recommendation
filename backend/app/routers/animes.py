@@ -1,19 +1,18 @@
-from fastapi import Query
-from fastapi import APIRouter, HTTPException, status, Request, Query
+from fastapi import APIRouter, HTTPException, status, Request, Query, Depends
 from app.utils.anime_api import get_anime, get_anime_by_name
 from app.utils.embeddings import generate_embeddings
 from app.utils.validate_params import validate_query_params
-from app.dependencies import db
 from app.schemas.animes import QueryMode, AnimeListResponse, AnimesListResponse, AnimeResponse, MessageResponse, GenresResponse, ChatBotResponse, ChatBotRequest
 from app.utils.fetch_status import get_current_page, update_current_page
 from app.utils.chatbot import chatbot
 import random
 import numpy as np
 from typing import Optional
+from app.dependencies import get_database
+from motor.motor_asyncio import AsyncIOMotorDatabase
 
 
 router = APIRouter()
-anime_collection = db.animes
 
 
 @router.post("/fetch", response_model=MessageResponse, status_code=status.HTTP_201_CREATED)
@@ -31,8 +30,15 @@ async def fetch_animes(request: Request, perPage: int = 1):
 
 
 @router.post("/recommendations", response_model=AnimeListResponse)
-async def recommend_anime(request: Request, query: str, mode: QueryMode = QueryMode.description, top_k: int = 5):
+async def recommend_anime(
+    request: Request,
+    query: str,
+    mode: QueryMode = QueryMode.description,
+    top_k: int = 5,
+    db: AsyncIOMotorDatabase = Depends(get_database)
+):
     validate_query_params(request, {"query", "mode", "top_k"})
+    anime_collection = db.animes
 
     if mode == QueryMode.anime_name:
         anime = await anime_collection.find_one({
@@ -84,7 +90,7 @@ async def recommend_anime(request: Request, query: str, mode: QueryMode = QueryM
         }
     ]
 
-    cursor = await anime_collection.aggregate(pipeline)
+    cursor = anime_collection.aggregate(pipeline)
     results = [doc async for doc in cursor]
 
     if not results:
@@ -102,9 +108,11 @@ async def get_animes(
     max_score: Optional[int] = Query(None),
     season: Optional[str] = Query(None),
     year: Optional[int] = Query(None),
-    query: Optional[str] = Query(None)
+    query: Optional[str] = Query(None),
+    db: AsyncIOMotorDatabase = Depends(get_database)
 ):
     skip = (page - 1) * per_page
+    anime_collection = db.animes
 
     mongo_query = {}
 
@@ -170,9 +178,10 @@ async def get_animes(
 
 
 @router.post("/suggestions", response_model=MessageResponse, status_code=status.HTTP_201_CREATED)
-async def suggest_anime(anime_name: str):
+async def suggest_anime(anime_name: str, db: AsyncIOMotorDatabase = Depends(get_database)):
     if not anime_name:
         raise HTTPException(status_code=400, detail="Anime name is required")
+    anime_collection = db.animes
 
     existing_anime = await anime_collection.find_one({
         "$or": [
@@ -196,13 +205,15 @@ async def suggest_anime(anime_name: str):
 
 
 @router.get("/genres", response_model=GenresResponse)
-async def get_genres():
+async def get_genres(db: AsyncIOMotorDatabase = Depends(get_database)):
+    anime_collection = db.animes
     genres = await anime_collection.distinct("genres")
     return {"genres": genres}
 
 
 @router.get("/search", response_model=AnimeListResponse)
-async def search_anime(query: str):
+async def search_anime(query: str, db: AsyncIOMotorDatabase = Depends(get_database)):
+    anime_collection = db.animes
     animes = anime_collection.find({
         "$or": [
             {"title.romaji": {"$regex": query, "$options": "i"}},
@@ -235,8 +246,9 @@ async def search_anime(query: str):
 
 
 @router.get("/filter", response_model=AnimeListResponse)
-async def filter_anime_by_genre(genre: str, limit: int = 10, page: int = 1):
+async def filter_anime_by_genre(genre: str, limit: int = 10, page: int = 1, db: AsyncIOMotorDatabase = Depends(get_database)):
     skip = (page - 1) * limit
+    anime_collection = db.animes
     animes = anime_collection.find({
         "genres": {
             "$elemMatch": {
@@ -273,7 +285,8 @@ async def filter_anime_by_genre(genre: str, limit: int = 10, page: int = 1):
 
 
 @router.get("/random", response_model=AnimeResponse)
-async def get_random_anime():
+async def get_random_anime(db: AsyncIOMotorDatabase = Depends(get_database)):
+    anime_collection = db.animes
     count = await anime_collection.count_documents({})
 
     if count == 0:
@@ -290,8 +303,9 @@ async def get_random_anime():
 
 
 @router.get("/top-rated", response_model=AnimeListResponse)
-async def top_rated_anime(request: Request, limit: int = 10):
+async def top_rated_anime(request: Request, limit: int = 10, db: AsyncIOMotorDatabase = Depends(get_database)):
     validate_query_params(request, {"limit"})
+    anime_collection = db.animes
     animes = anime_collection.find({}).sort(
         "averageScore", -1).limit(limit)
 
@@ -321,7 +335,8 @@ async def top_rated_anime(request: Request, limit: int = 10):
 
 
 @router.get("/{anime_name}", response_model=AnimeResponse)
-async def get_anime_by_name_endpoint(anime_name: str):
+async def get_anime_by_name_endpoint(anime_name: str, db: AsyncIOMotorDatabase = Depends(get_database)):
+    anime_collection = db.animes
     anime = await anime_collection.find_one({
         "$or": [
             {"title.romaji": anime_name.lower()},
@@ -338,8 +353,8 @@ async def get_anime_by_name_endpoint(anime_name: str):
 
 
 @router.post("/chatbot", response_model=ChatBotResponse)
-async def Chatbot(request: ChatBotRequest):
-    results = await chatbot(request.message)
+async def Chatbot(request: ChatBotRequest, db: AsyncIOMotorDatabase = Depends(get_database)):
+    results = await chatbot(request.message, db)
     if not results:
         raise HTTPException(status_code=404, detail="No results found")
     return {"results": results}

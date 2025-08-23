@@ -1,9 +1,15 @@
-from pymongo import AsyncMongoClient
+from collections.abc import AsyncGenerator
+from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 import os
 from dotenv import load_dotenv
 
 load_dotenv()
 db_uri = os.getenv("MONGODB_URI")
-client = AsyncMongoClient(db_uri)
 
-db = client.anime_recommendation
+
+async def get_database() -> AsyncGenerator[AsyncIOMotorDatabase, None]:
+    client = AsyncIOMotorClient(db_uri)
+    try:
+        yield client.anime_recommendation
+    finally:
+        client.close()

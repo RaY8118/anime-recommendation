@@ -1,15 +1,17 @@
 import httpx
-from app.dependencies import db
 from app.utils.embeddings import generate_embeddings
 from app.utils.clean_text import clean_html
 from app.schemas.animes import Anime
 import asyncio
+from fastapi import Depends
+from app.dependencies import get_database
+from motor.motor_asyncio import AsyncIOMotorDatabase
 
-anime_collection = db.animes
 url = "https://graphql.anilist.co"
 
 
-async def get_anime(page: int = 1, perPage: int = 1):
+async def get_anime(page: int = 1, perPage: int = 1, db: AsyncIOMotorDatabase = Depends(get_database)):
+    anime_collection = db.animes
     query = '''
     query ($page: Int, $perPage: Int) {
       Page(page: $page, perPage: $perPage) {

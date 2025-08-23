@@ -1,18 +1,19 @@
 from app.utils.embeddings import generate_embeddings
 import numpy as np
-from app.dependencies import db
 from app.utils.anime_api import process_anime
 from google import genai
+from fastapi import Depends
+from app.dependencies import get_database
+from motor.motor_asyncio import AsyncIOMotorDatabase
 
 client = genai.Client()
-
-anime_collection = db.animes
 
 CONVERSATION_HISTORY = []
 VALID_ROLES = {"user", "model"}
 
 
-async def chatbot(message: str):
+async def chatbot(message: str, db: AsyncIOMotorDatabase = Depends(get_database)):
+    anime_collection = db.animes
     CONVERSATION_HISTORY.append({"role": "user", "message": message})
 
     message_embedding = await generate_embeddings(message)
@@ -50,7 +51,7 @@ async def chatbot(message: str):
         }
     ]
 
-    cursor = await anime_collection.aggregate(pipeline)
+    cursor = anime_collection.aggregate(pipeline)
     results = [doc async for doc in cursor]
 
     processed_animes = []
