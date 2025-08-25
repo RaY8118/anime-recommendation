@@ -119,10 +119,10 @@ const Navbar = () => {
                   Recommendations
                 </Link>
                 <Link
-                  to="/genres"
+                  to="/watchlist"
                   className="text-text-light transition-colors duration-300 hover:text-primary text-lg font-medium"
                 >
-                  Genres
+                  Watchlist
                 </Link>
                 <Link
                   to="/suggest"
@@ -266,7 +266,9 @@ const Navbar = () => {
                   </button>
                 ) : (
                   <>
-                    <span className="text-text-light">Hello, {user?.nickname}</span>
+                    <span className="text-text-light">
+                      Hello, {user?.nickname}
+                    </span>
                     <button
                       onClick={() => {
                         logout({

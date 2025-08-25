@@ -2,7 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
 import "./App.css";
 
-import { useAuth0 } from "@auth0/auth0-react";
 import ChatbotUi from "./components/Chatbot";
 import Footer from "./components/Footer";
 import Navbar from "./components/Navbar";
@@ -12,7 +11,8 @@ import Genres from "./pages/Genres";
 import Home from "./pages/Home";
 import Recommendations from "./pages/Recommendations";
 import SuggestAnime from "./pages/SuggestAnime";
-import { pingPrivateServer, pingServer } from "./services/api";
+import Watchlist from "./pages/Watchlist";
+import { pingServer } from "./services/api";
 
 function App() {
   const { isLoading, isError, refetch } = useQuery({
@@ -23,25 +23,6 @@ function App() {
     refetchOnReconnect: false,
   });
 
-  const { user, getAccessTokenSilently } = useAuth0();
-
-  useQuery({
-    queryKey: ["ping-private"],
-    queryFn: async () => {
-      const token = await getAccessTokenSilently({
-        authorizationParams: {
-          audience: "https://nekorec",
-          scope: "openid profile email read:messages",
-        },
-      });
-      return pingPrivateServer(token);
-    },
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    refetchOnReconnect: false,
-  });
-
-  console.log("user", user);
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white p-4">
@@ -100,6 +81,7 @@ function App() {
             <Route path="/recommendations" element={<Recommendations />} />
             <Route path="/genres" element={<Genres />} />
             <Route path="/suggest" element={<SuggestAnime />} />
+            <Route path="/watchlist" element={<Watchlist />} />
           </Routes>
         </main>
         <ChatbotUi />

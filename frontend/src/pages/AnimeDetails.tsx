@@ -2,12 +2,17 @@ import { useQuery } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
 import { Error as ErrorComponent } from "../components/Error";
 import { Loader } from "../components/Loader";
-import { getAnimeByName } from "../services/api";
+import { getAnimeByName, addToWatchlist } from "../services/api";
+import { AnimeStatus } from "../types/anime";
 import type { AnimeOut } from "../types/anime";
+import { useAuth0 } from "@auth0/auth0-react";
+import { useState } from "react";
 
 const AnimeDetails = () => {
   const { name } = useParams();
   const navigate = useNavigate();
+  const { isAuthenticated, getAccessTokenSilently } = useAuth0();
+  const [userAnimeStatus, setUserAnimeStatus] = useState<AnimeStatus>(AnimeStatus.PLANNED);
 
   const {
     data: animeResponse,
@@ -24,6 +29,27 @@ const AnimeDetails = () => {
     staleTime: 1000 * 60 * 5,
     enabled: !!name,
   });
+
+  const handleAddToWatchlist = async () => {
+    if (!isAuthenticated) {
+      alert("Please log in to add to watchlist.");
+      return;
+    }
+
+    if (!animeResponse?.id) {
+      alert("Anime ID not available.");
+      return;
+    }
+
+    try {
+      const token = await getAccessTokenSilently();
+      await addToWatchlist(String(animeResponse.id), userAnimeStatus, token);
+      alert("Anime added to watchlist!");
+    } catch (error) {
+      console.error("Failed to add to watchlist:", error);
+      alert("Failed to add anime to watchlist.");
+    }
+  };
 
   if (isLoading) return <Loader />;
   if (isError) return <ErrorComponent message={(error as Error).message} />;
@@ -116,6 +142,30 @@ const AnimeDetails = () => {
               </span>
             </div>
           </div>
+          <div className="mt-6">
+            <label htmlFor="userAnimeStatus" className="block text-text-light text-sm font-bold mb-2">
+              Set Watchlist Status:
+            </label>
+            <select
+              id="userAnimeStatus"
+              name="userAnimeStatus"
+              value={userAnimeStatus}
+              onChange={(e) => setUserAnimeStatus(e.target.value as AnimeStatus)}
+              className="block w-full bg-card border border-gray-300 text-text py-2 px-3 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
+            >
+              {Object.values(AnimeStatus).map((status) => (
+                <option key={status} value={status}>
+                  {status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()}
+                </option>
+              ))}
+            </select>
+          </div>
+          <button
+            onClick={handleAddToWatchlist}
+            className="mt-4 w-full rounded-lg bg-accent px-6 py-3 text-lg font-semibold text-white shadow-md transition duration-300 ease-in-out hover:bg-accent-dark focus:outline-none focus:ring-2 focus:ring-accent focus:ring-opacity-75"
+          >
+            Add to Watchlist
+          </button>
         </div>
       </div>
     </div>

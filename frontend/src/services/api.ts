@@ -9,6 +9,10 @@ import type {
   MessageResponse,
   RecommendationsParams,
 } from "../types/anime";
+import type {
+  WatchlistResponse,
+  WatchlistAnimeOut,
+} from "../types/watchlist";
 const API_URL = import.meta.env.VITE_API_URL;
 
 const api = axios.create({
@@ -130,4 +134,34 @@ export const sendChatMessage = async (
   message: string
 ): Promise<AxiosResponse<ChatbotResponse>> => {
   return api.post(`${API_URL}/v1/animes/chatbot`, { message });
+};
+
+export const getWatchlist = async (
+  token: string
+): Promise<AxiosResponse<WatchlistAnimeOut[]>> => {
+  return api.get(`${API_URL}/v1/watchlist`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};
+
+export const addToWatchlist = async (
+  anime_id: string,
+  user_anime_status: string,
+  token: string
+): Promise<AxiosResponse<WatchlistResponse>> => {
+  return api.post(
+    `${API_URL}/v1/watchlist/add`,
+    {},
+    {
+      params: {
+        anime_id: anime_id,
+        user_anime_status: user_anime_status,
+      },
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
 };

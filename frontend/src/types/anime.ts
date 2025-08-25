@@ -1,5 +1,13 @@
 import type { Dispatch, SetStateAction } from "react";
 
+export enum AnimeStatus {
+  WATCHING = "watching",
+  COMPLETED = "completed",
+  PLANNED = "planned",
+  DROPPED = "dropped",
+  PAUSED = "paused",
+}
+
 export type Title = {
   romaji: string;
   english: string;
