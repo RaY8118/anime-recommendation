@@ -3,6 +3,16 @@ from typing import List, Optional
 from enum import Enum
 
 
+class AnimeStatus(str, Enum):
+    WATCHING = "watching"
+    COMPLETED = "completed"
+    PLANNED = "planned"
+    DROPPED = "dropped"
+    PAUSED = "paused"
+    FINISHED = "FINISHED"
+    RELEASING = "RELEASING"
+
+
 class Title(BaseModel):
     romaji: Optional[str]
     english: Optional[str]
@@ -24,7 +34,7 @@ class Anime(BaseModel):
     duration: Optional[int] = None
     season: Optional[str] = None
     seasonYear: Optional[int] = None
-    status: Optional[str] = None
+    status: Optional[AnimeStatus] = None
     source: Optional[str] = None
     studios: Optional[List[str]] = Field(default_factory=list)
     coverImage: Optional[CoverImage] = None
@@ -41,7 +51,7 @@ class AnimeOut(BaseModel):
     duration: Optional[int] = None
     season: Optional[str] = None
     seasonYear: Optional[int] = None
-    status: Optional[str] = None
+    status: Optional[AnimeStatus] = None
     source: Optional[str] = None
     studios: Optional[List[str]] = Field(default_factory=list)
     coverImage: Optional[CoverImage] = None
