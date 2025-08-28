@@ -22,7 +22,6 @@ const Browse = () => {
 
   const debouncedFilters = useDebounce(filters, 1000);
 
-  // 🔧 Reset page when filters change
   useEffect(() => {
     setCurrentChunkPage(1);
     setCurrentDisplayPage(1);
@@ -41,9 +40,6 @@ const Browse = () => {
       }),
     staleTime: 1000 * 60 * 5,
   });
-
-  console.log("filters:", filters);
-  console.log("debouncedFilters:", debouncedFilters);
 
   if (isLoading && !data) return <Loader />;
   if (isError) return <Error message={(error as Error).message} />;

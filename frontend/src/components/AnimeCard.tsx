@@ -1,10 +1,31 @@
 import { Link } from "react-router-dom";
 import type { AnimeOut } from "../types/anime";
 
-export const AnimeCard = ({ anime }: { anime: AnimeOut }) => {
+export const AnimeCard = ({
+  anime,
+  onDelete,
+}: {
+  anime: AnimeOut;
+  onDelete?: () => void;
+}) => {
   return (
-    <Link to={`/anime/${anime.title.romaji}`}>
-      <div className="bg-card text-text rounded-xl shadow-lg p-5 mb-6 hover:shadow-2xl hover:-translate-y-2 hover:border-primary border border-transparent transition-all duration-300 transform group">
+    <div className="bg-card text-text rounded-xl shadow-lg p-5 mb-6 hover:shadow-2xl hover:-translate-y-2 hover:border-primary border border-transparent transition-all duration-300 transform group relative">
+      {/* Delete button outside of the Link */}
+      {onDelete && (
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onDelete();
+          }}
+          className="absolute top-2 right-2 bg-red-600 text-white px-2 py-1 rounded-md shadow hover:bg-red-700 z-20"
+        >
+          ✕
+        </button>
+      )}
+
+      {/* Link only wraps the anime content */}
+      <Link to={`/anime/${anime.title.romaji}`}>
         <div className="relative overflow-hidden rounded-lg mb-4">
           <img
             src={anime.coverImage?.large}
@@ -21,7 +42,7 @@ export const AnimeCard = ({ anime }: { anime: AnimeOut }) => {
         <p className="text-sm text-text-light leading-relaxed">
           {anime.description?.slice(0, 120)}...
         </p>
-      </div>
-    </Link>
+      </Link>
+    </div>
   );
 };

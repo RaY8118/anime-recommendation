@@ -9,10 +9,7 @@ import type {
   MessageResponse,
   RecommendationsParams,
 } from "../types/anime";
-import type {
-  WatchlistResponse,
-  WatchlistAnimeOut,
-} from "../types/watchlist";
+import type { WatchlistResponse, WatchlistAnimeOut } from "../types/watchlist";
 const API_URL = import.meta.env.VITE_API_URL;
 
 const api = axios.create({
@@ -158,6 +155,47 @@ export const addToWatchlist = async (
       params: {
         anime_id: anime_id,
         user_anime_status: user_anime_status,
+      },
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+};
+
+export const getWatchlistItem = async (
+  anime_id: string,
+  token: string
+): Promise<AxiosResponse<WatchlistAnimeOut | null>> => {
+  return api.get(`${API_URL}/v1/watchlist/${anime_id}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};
+
+export const deleteFromWatchlist = async (
+  anime_id: string,
+  token: string
+): Promise<AxiosResponse<WatchlistResponse>> => {
+  return api.delete(`${API_URL}/v1/watchlist/${anime_id}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+};
+
+export const updateWatchlistStatus = async (
+  anime_id: string,
+  user_anime_status: string,
+  token: string
+): Promise<AxiosResponse<WatchlistResponse>> => {
+  return api.put(
+    `${API_URL}/v1/watchlist/${anime_id}`,
+    {},
+    {
+      params: {
+        new_status: user_anime_status,
       },
       headers: {
         Authorization: `Bearer ${token}`,

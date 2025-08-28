@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
-import { getWatchlist } from "../services/api";
+import { deleteFromWatchlist, getWatchlist } from "../services/api";
 import { useAuth0 } from "@auth0/auth0-react";
 import { AnimeCard } from "../components/AnimeCard";
 import { Loader } from "../components/Loader";
 import { Error } from "../components/Error";
 import type { WatchlistAnimeOut } from "../types/watchlist";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 const Watchlist = () => {
   const {
@@ -12,38 +12,34 @@ const Watchlist = () => {
     isAuthenticated,
     isLoading: authLoading,
   } = useAuth0();
-  const [watchlist, setWatchlist] = useState<WatchlistAnimeOut[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchWatchlist = async () => {
-      if (!isAuthenticated || authLoading) {
-        setLoading(false);
-        return;
-      }
-      try {
-        setLoading(true);
-        const token = await getAccessTokenSilently();
-        const response = await getWatchlist(token);
-        setWatchlist(response.data);
-      } catch (err) {
-        console.error("Failed to fetch watchlist:", err);
-        setError("Failed to load watchlist. Please try again later.");
-      } finally {
-        setLoading(false);
-      }
-    };
+  const queryClient = useQueryClient();
 
-    fetchWatchlist();
-  }, [isAuthenticated, authLoading, getAccessTokenSilently]);
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["watchlist"],
+    queryFn: async () => {
+      const token = await getAccessTokenSilently();
+      const res = await getWatchlist(token);
+      return res.data;
+    },
+    enabled: isAuthenticated && !authLoading,
+  });
 
-  if (loading) {
+  const handleDeleteWatchlist = useMutation({
+    mutationFn: async (anime_id: string) => {
+      const token = await getAccessTokenSilently();
+      return deleteFromWatchlist(anime_id, token);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["watchlist"] });
+    },
+  });
+  if (isLoading) {
     return <Loader />;
   }
 
-  if (error) {
-    return <Error message={error} />;
+  if (isError) {
+    return <Error message="Failed to load watchlist." />;
   }
 
   if (!isAuthenticated) {
@@ -53,6 +49,8 @@ const Watchlist = () => {
       </div>
     );
   }
+
+  const watchlist: WatchlistAnimeOut[] = data || [];
 
   if (watchlist.length === 0) {
     return (
@@ -69,7 +67,11 @@ const Watchlist = () => {
       </h1>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {watchlist.map((anime) => (
-          <AnimeCard key={anime.id} anime={anime} />
+          <AnimeCard
+            key={anime.id}
+            anime={anime}
+            onDelete={() => handleDeleteWatchlist.mutate(String(anime.id))}
+          />
         ))}
       </div>
     </div>
