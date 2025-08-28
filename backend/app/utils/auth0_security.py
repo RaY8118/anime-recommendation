@@ -30,11 +30,11 @@ def get_current_user(
         elif aud != API_AUDIENCE:
             raise ValueError("Invalid audience")
 
-        print("✅ TOKEN CLAIMS:", claims)
+        # print("✅ TOKEN CLAIMS:", claims)
         return claims
 
     except Exception as e:
-        print("❌ TOKEN VALIDATION FAILED:", str(e))
+        # print("❌ TOKEN VALIDATION FAILED:", str(e))
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired token",
@@ -45,5 +45,5 @@ def get_current_user(
 def get_current_user_id(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)):
     claims = get_current_user(credentials)
     user_id = claims.get("sub")
-    print("✅ USER ID:", user_id)
+    # print("✅ USER ID:", user_id)
     return user_id
