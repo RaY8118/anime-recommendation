@@ -1,10 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { AnimeCard } from "../components/AnimeCard";
 import { Error } from "../components/Error";
-import GenreHighlights from "../components/GenreHighlights";
+import GenreHighlights from "../components/GenreHighlights"; // Keep this import
 import { Loader } from "../components/Loader";
 import TopRatedList from "../components/TopRatedList";
 import { getRandomAnime, getTopRated } from "../services/api";
+import { Tab } from '@headlessui/react'; // Import Tab components
 
 const Home = () => {
   const {
@@ -36,6 +37,8 @@ const Home = () => {
     staleTime: 1000 * 60 * 5,
   });
 
+  const genres = ["Action", "Romance", "Comedy", "Adventure"]; // Define genres
+
   return (
     <div className="container mx-auto px-4 py-10">
       <h1 className="mb-10 text-center text-5xl font-extrabold text-primary drop-shadow-lg">
@@ -64,11 +67,40 @@ const Home = () => {
         {topRated && <TopRatedList animes={topRated} />}
       </section>
 
-      <section className="space-y-16">
-        <GenreHighlights genre="Action" />
-        <GenreHighlights genre="Romance" />
-        <GenreHighlights genre="Comedy" />
-        <GenreHighlights genre="Adventure" />
+      <section className="mb-16">
+        <h2 className="mb-8 text-center text-4xl font-bold text-primary">
+          Explore Genres
+        </h2>
+        <Tab.Group>
+          <Tab.List className="flex space-x-1 rounded-xl bg-card/50 p-1">
+            {genres.map((genre) => (
+              <Tab
+                key={genre}
+                className={({ selected }) =>
+                  `w-full rounded-lg py-2.5 text-sm font-medium leading-5
+                  ring-offset-2 focus:outline-none focus:ring-2
+                  ${
+                    selected
+                      ? 'bg-primary text-white shadow ring-primary'
+                      : 'text-text-light hover:bg-primary/10 hover:text-primary'
+                  }`
+                }
+              >
+                {genre}
+              </Tab>
+            ))}
+          </Tab.List>
+          <Tab.Panels className="mt-2">
+            {genres.map((genre) => (
+              <Tab.Panel
+                key={genre}
+                className="rounded-xl bg-card p-3 ring-offset-2 focus:outline-none focus:ring-2 ring-primary"
+              >
+                <GenreHighlights genre={genre} /> {/* Render existing component */}
+              </Tab.Panel>
+            ))}
+          </Tab.Panels>
+        </Tab.Group>
       </section>
     </div>
   );
