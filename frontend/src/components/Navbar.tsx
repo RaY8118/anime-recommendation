@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 import ThemeToggle from "./ThemeToggle";
 import { useAuth0 } from "@auth0/auth0-react";
+import { Button } from '@headlessui/react';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -140,16 +141,16 @@ const Navbar = () => {
                 ) : (
                   <>
                     <span className="mr-4">Hello, {user?.nickname}</span>
-                    <button
+                    <Button
                       onClick={() =>
                         logout({
                           logoutParams: { returnTo: window.location.origin },
                         })
                       }
-                      className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+                      className="inline-flex items-center gap-2 rounded-md bg-red-500 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-inner shadow-white/10 focus:not-data-focus:outline-none data-focus:outline data-focus:outline-white data-hover:bg-red-700 data-open:bg-red-500"
                     >
                       Logout
-                    </button>
+                    </Button>
                   </>
                 )}
                 <ThemeToggle />
@@ -269,17 +270,17 @@ const Navbar = () => {
                     <span className="text-text-light">
                       Hello, {user?.nickname}
                     </span>
-                    <button
+                    <Button
                       onClick={() => {
                         logout({
                           logoutParams: { returnTo: window.location.origin },
                         });
                         toggleMenu();
                       }}
-                      className="w-full bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+                      className="w-full inline-flex items-center justify-center gap-2 rounded-md bg-red-500 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-inner shadow-white/10 focus:not-data-focus:outline-none data-focus:outline data-focus:outline-white data-hover:bg-red-700 data-open:bg-red-500"
                     >
                       Logout
-                    </button>
+                    </Button>
                   </>
                 )}
               </div>

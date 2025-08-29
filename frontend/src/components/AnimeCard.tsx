@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
 import type { AnimeOut } from "../types/anime";
+import { Button } from '@headlessui/react';
+import { TrashIcon } from '@heroicons/react/24/solid';
 
 export const AnimeCard = ({
   anime,
@@ -9,19 +11,19 @@ export const AnimeCard = ({
   onDelete?: () => void;
 }) => {
   return (
-    <div className="bg-card text-text rounded-xl shadow-lg p-5 mb-6 hover:shadow-2xl hover:-translate-y-2 hover:border-primary border border-transparent transition-all duration-300 transform group relative">
+    <div className="bg-black/20 backdrop-blur-xl text-text rounded-xl shadow-lg p-5 mb-6 hover:shadow-2xl hover:-translate-y-2 hover:border-primary border border-white/10 transition-all duration-300 transform group relative">
       {/* Delete button outside of the Link */}
       {onDelete && (
-        <button
+        <Button
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
             onDelete();
           }}
-          className="absolute top-2 right-2 bg-red-600 text-white px-2 py-1 rounded-md shadow hover:bg-red-700 z-20"
+          className="absolute top-2 right-2 inline-flex items-center gap-2 rounded-md bg-red-600 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-inner shadow-white/10 focus:not-data-focus:outline-none data-focus:outline data-focus:outline-white data-hover:bg-red-700 data-open:bg-red-600 z-20"
         >
-          ✕
-        </button>
+          <TrashIcon className="h-4 w-4" />
+        </Button>
       )}
 
       {/* Link only wraps the anime content */}

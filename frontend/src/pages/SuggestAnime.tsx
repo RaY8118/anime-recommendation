@@ -6,6 +6,7 @@ import { suggestAnime } from "../services/api";
 import type { MessageResponse } from "../types/anime";
 
 import { useLocation } from "react-router-dom";
+import { Button } from '@headlessui/react';
 
 const SuggestAnime = () => {
   const location = useLocation();
@@ -84,13 +85,13 @@ const SuggestAnime = () => {
           />
         </div>
 
-        <button
+        <Button
           type="submit"
-          className="w-full rounded-lg bg-primary px-6 py-3 text-xl font-bold text-white shadow-md transition-all duration-300 hover:bg-accent"
+          className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 text-xl font-bold text-white shadow-md transition-all duration-300 hover:bg-accent"
           disabled={isPending}
         >
           {isPending ? "Submitting..." : "Suggest Anime"}
-        </button>
+        </Button>
       </form>
     </div>
   );
