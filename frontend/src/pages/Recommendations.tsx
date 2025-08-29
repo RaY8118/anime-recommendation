@@ -1,10 +1,25 @@
-import { useQuery } from "@tanstack/react-query";
-import { useState, type FormEvent } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState, type FormEvent, useEffect } from "react";
 import { AnimeCard } from "../components/AnimeCard";
 import { Error } from "../components/Error";
 import { Loader } from "../components/Loader";
 import { getRecommendations } from "../services/api";
-import { QueryMode, type RecommendationsParams } from "../types/anime";
+import {
+  QueryMode,
+  type RecommendationsParams,
+  type AnimeListResponse,
+} from "../types/anime";
+import type { AxiosResponse } from "axios";
+
+const RECOMMENDATIONS_STORAGE_KEY = "recommendations_state";
+
+interface RecommendationsState {
+  query: string;
+  mode: QueryMode;
+  topK: number;
+  submittedParams: RecommendationsParams | null;
+  data: AxiosResponse<AnimeListResponse> | undefined;
+}
 
 const Recommendations = () => {
   const [query, setQuery] = useState("");
@@ -13,20 +28,59 @@ const Recommendations = () => {
   const [submittedParams, setSubmittedParams] =
     useState<RecommendationsParams | null>(null);
 
+  // Load state from sessionStorage on initial mount
+  useEffect(() => {
+    const storedState = sessionStorage.getItem(RECOMMENDATIONS_STORAGE_KEY);
+    if (storedState) {
+      const { query, mode, topK, submittedParams, data } = JSON.parse(
+        storedState
+      ) as RecommendationsState;
+      setQuery(query);
+      setMode(mode);
+      setTopK(topK);
+      setSubmittedParams(submittedParams);
+      // Pre-populate react-query cache if data exists
+      if (data) {
+        queryClient.setQueryData(["recommendations", submittedParams], data);
+      }
+    }
+  }, []);
+
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["recommendations", submittedParams],
     queryFn: () => getRecommendations(submittedParams!),
     enabled: !!submittedParams,
   });
 
+  // Save state to sessionStorage whenever relevant state changes
+  useEffect(() => {
+    if (submittedParams) {
+      const stateToStore: RecommendationsState = {
+        query,
+        mode,
+        topK,
+        submittedParams,
+        data,
+      };
+      sessionStorage.setItem(
+        RECOMMENDATIONS_STORAGE_KEY,
+        JSON.stringify(stateToStore)
+      );
+    }
+  }, [query, mode, topK, submittedParams, data]);
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setSubmittedParams({
+    const newSubmittedParams = {
       query,
       mode,
       top_k: topK,
-    });
+    };
+    setSubmittedParams(newSubmittedParams);
   };
+
+  // Import useQueryClient from react-query
+  const queryClient = useQueryClient();
 
   return (
     <div className="container mx-auto px-4 py-10">
