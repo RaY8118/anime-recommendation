@@ -5,8 +5,8 @@ import { Loader } from "../components/Loader";
 import { Error } from "../components/Error";
 import type { WatchlistAnimeOut } from "../types/watchlist";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Tab } from '@headlessui/react'; // Import Tab components
-import { AnimeStatus } from "../types/anime"; // Ensure this is imported
+import { Tab } from '@headlessui/react';
+import { AnimeStatus } from "../types/anime";
 
 const Watchlist = () => {
   const {
@@ -20,7 +20,12 @@ const Watchlist = () => {
   const { data, isLoading, isError } = useQuery({
     queryKey: ["watchlist"],
     queryFn: async () => {
-      const token = await getAccessTokenSilently();
+      const token = await getAccessTokenSilently({
+        authorizationParams: {
+          audience: import.meta.env.VITE_AUTH0_AUDIENCE,
+          scope: "openid profile email",
+        },
+      });
       const res = await getWatchlist(token);
       return res.data;
     },
@@ -29,7 +34,12 @@ const Watchlist = () => {
 
   const handleDeleteWatchlist = useMutation({
     mutationFn: async (anime_id: string) => {
-      const token = await getAccessTokenSilently();
+      const token = await getAccessTokenSilently({
+        authorizationParams: {
+          audience: import.meta.env.VITE_AUTH0_AUDIENCE,
+          scope: "openid profile email",
+        },
+      });
       return deleteFromWatchlist(anime_id, token);
     },
     onSuccess: () => {
@@ -76,10 +86,9 @@ const Watchlist = () => {
                 className={({ selected }) =>
                   `w-full rounded-lg py-2.5 text-sm font-medium leading-5
                   ring-offset-2 focus:outline-none focus:ring-2
-                  ${
-                    selected
-                      ? 'bg-primary text-white shadow ring-primary'
-                      : 'text-text-light hover:bg-primary/10 hover:text-primary'
+                  ${selected
+                    ? 'bg-primary text-white shadow ring-primary'
+                    : 'text-text-light hover:bg-primary/10 hover:text-primary'
                   }`
                 }
               >

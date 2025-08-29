@@ -52,7 +52,12 @@ const AnimeDetails = () => {
   const { data: watchlistItem, isLoading: watchlistLoading } = useQuery({
     queryKey: ["watchlist", animeResponse?.id],
     queryFn: async () => {
-      const token = await getAccessTokenSilently();
+      const token = await getAccessTokenSilently({
+        authorizationParams: {
+          audience: import.meta.env.VITE_AUTH0_AUDIENCE,
+          scope: "openid profile email",
+        },
+      });
       const res = await getWatchlistItem(String(animeResponse!.id), token);
       return res.data as WatchlistAnimeOut | null;
     },
@@ -70,7 +75,12 @@ const AnimeDetails = () => {
   const addMutation = useMutation({
     mutationFn: async () => {
       if (!animeResponse?.id) throw new Error("Anime ID not available");
-      const token = await getAccessTokenSilently();
+      const token = await getAccessTokenSilently({
+        authorizationParams: {
+          audience: import.meta.env.VITE_AUTH0_AUDIENCE,
+          scope: "openid profile email",
+        },
+      });
       return addToWatchlist(String(animeResponse.id), userAnimeStatus, token);
     },
     onSuccess: () =>
@@ -83,7 +93,12 @@ const AnimeDetails = () => {
   const updateMutation = useMutation({
     mutationFn: async (newStatus: AnimeStatus) => {
       if (!animeResponse?.id) throw new Error("Anime ID not available");
-      const token = await getAccessTokenSilently();
+      const token = await getAccessTokenSilently({
+        authorizationParams: {
+          audience: import.meta.env.VITE_AUTH0_AUDIENCE,
+          scope: "openid profile email",
+        },
+      });
       return updateWatchlistStatus(String(animeResponse.id), newStatus, token);
     },
     onSuccess: () =>
@@ -96,7 +111,12 @@ const AnimeDetails = () => {
   const deleteMutation = useMutation({
     mutationFn: async () => {
       if (!animeResponse?.id) throw new Error("Anime ID not available");
-      const token = await getAccessTokenSilently();
+      const token = await getAccessTokenSilently({
+        authorizationParams: {
+          audience: import.meta.env.VITE_AUTH0_AUDIENCE,
+          scope: "openid profile email",
+        },
+      });
       return deleteFromWatchlist(String(animeResponse.id), token);
     },
     onSuccess: () =>
@@ -113,7 +133,7 @@ const AnimeDetails = () => {
 
   return (
     <div className="container mx-auto px-4 py-10">
-      
+
       <div className="flex flex-col gap-8 rounded-xl bg-black/20 backdrop-blur-xl border border-white/10 p-8 shadow-xl lg:flex-row">
         {/* Anime Cover Image */}
         <div className="flex-shrink-0 lg:w-1/3">
@@ -159,8 +179,7 @@ const AnimeDetails = () => {
                               <Listbox.Option
                                 key={status}
                                 className={({ active }) =>
-                                  `relative cursor-default select-none py-2 pl-10 pr-4 ${
-                                    active ? 'bg-primary text-white' : 'text-text'
+                                  `relative cursor-default select-none py-2 pl-10 pr-4 ${active ? 'bg-primary text-white' : 'text-text'
                                   }`
                                 }
                                 value={status}
@@ -168,9 +187,8 @@ const AnimeDetails = () => {
                                 {({ selected }) => (
                                   <>
                                     <span
-                                      className={`block truncate ${
-                                        selected ? 'font-medium' : 'font-normal'
-                                      }`}
+                                      className={`block truncate ${selected ? 'font-medium' : 'font-normal'
+                                        }`}
                                     >
                                       {status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()}
                                     </span>
