@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, status, Request, Query, Depends
-from app.utils.anime_api import get_anime, get_anime_by_name
+from app.utils.anime_api import get_anime
 from app.utils.embeddings import generate_embeddings
 from app.utils.validate_params import validate_query_params
 from app.schemas.animes import QueryMode, AnimeListResponse, AnimesListResponse, AnimeResponse, MessageResponse, GenresResponse, ChatBotResponse, ChatBotRequest
@@ -182,6 +182,7 @@ async def suggest_anime(anime_name: str, db: AsyncIOMotorDatabase = Depends(get_
     if not anime_name:
         raise HTTPException(status_code=400, detail="Anime name is required")
     anime_collection = db.animes
+    suggestions_collection = db.suggestions
 
     existing_anime = await anime_collection.find_one({
         "$or": [
@@ -194,13 +195,7 @@ async def suggest_anime(anime_name: str, db: AsyncIOMotorDatabase = Depends(get_
         raise HTTPException(
             status_code=409, detail=f"{anime_name} already exists in the database")
 
-    anime_data = await get_anime_by_name(anime_name)
-
-    if not anime_data:
-        raise HTTPException(
-            status_code=404, detail="Anime not found on external API")
-
-    await anime_collection.insert_one(anime_data)
+    await suggestions_collection.insert_one(anime_name)
     return {"message": f"{anime_name} added to the database"}
 
 
