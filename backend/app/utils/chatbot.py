@@ -1,4 +1,3 @@
-from app.utils.embeddings import generate_embeddings
 import numpy as np
 from app.dependencies import get_database
 from app.utils.anime_api import process_anime
@@ -29,7 +28,7 @@ async def chatbot(message: str, db: AsyncIOMotorDatabase = Depends(get_database)
                 "path": "embedding",
                 "queryVector": message_embedding,
                 "numCandidates": 100,
-                "limit": 5
+                "limit": 15,
             }
         },
         {
@@ -48,54 +47,63 @@ async def chatbot(message: str, db: AsyncIOMotorDatabase = Depends(get_database)
                 "source": 1,
                 "studios": 1,
                 "coverImage": 1,
-                "score": {"$meta": "vectorSearchScore"}
+                "score": {"$meta": "vectorSearchScore"},
             }
-        }
+        },
     ]
 
     cursor = anime_collection.aggregate(pipeline)
     results = [doc async for doc in cursor]
 
-    processed_animes = []
-    for anime in results:
-        processed_anime = await process_anime(anime)
-        processed_animes.append(processed_anime)
+    formatted_animes = [format_anime_for_llm(anime) for anime in results]
 
-    context_parts = [
-        {
-            "role": "user",
-            "parts": [
-                {
-                    "text": (
-                        "You are a helpful and friendly assistant designed to suggest animes based on the user's query. "
-                        "Your responses should be concise, informative, and engaging. You can suggest animes based on their titles, descriptions, genres, and other relevant attributes. "
-                        "You can also provide information about the anime's release date, episode count, and other details that may be helpful for the user. "
-                        "Remember to keep your responses short and to the point, and avoid using technical jargon or complex language. "
-                        "If you don't have enough information to provide a recommendation, you can suggest that the user look for other anime or provide a general recommendation based on the user's preferences."
-                    )
-                }
-            ],
-        }
-    ]
+    context_string = "\n\n".join(formatted_animes)
+
+    RAG_SYSTEM_INSTRUCTION = (
+        "You are a highly engaging and expert anime recommendation bot named 'Anime Genie'.\n"
+        "Your primary goal is to provide **personalized and insightful** anime suggestions based **EXCLUSIVELY** on the 'CONTEXT ANIME DATA' provided.\n\n"
+        "**Guidelines:**\n"
+        "1. **Analyze:** Carefully review the user's query and the provided anime data to find the best matches.\n"
+        "2. **Persona:** Respond in a friendly, enthusiastic, and knowledgeable tone.\n"
+        "3. **Recommendation Structure:** Suggest **1 to 3** of the most relevant animes. For each, use the provided data to:\n"
+        "   * Mention the **English and Romaji Title**.\n"
+        "   * Briefly summarize the **Description** (do not just paste it).\n"
+        "   * Highlight the **Genre(s)**.\n"
+        "4. **Strict Constraint:** You **MUST NOT** use any external knowledge. All recommendations and details must be derived *only* from the 'CONTEXT ANIME DATA'.\n"
+        "5. **Fallback:** If the context data is empty or entirely irrelevant, politely state: 'I apologize, but based on the available data, I couldn't find a suitable recommendation for your specific request. Perhaps try a query with different themes or genres?'"
+    )
+
+    final_contents = []
 
     for msg in CONVERSATION_HISTORY[-10:]:
         role = msg["role"]
         if role == "bot":
             role = "model"
-        if role not in VALID_ROLES:
+        if role not in ["user", "model"]:
             continue
 
-        context_parts.append({
-            "role": role,
-            "parts": [{"text": msg["message"]}]
-        })
+        final_contents.append({"role": role, "parts": [{"text": msg["message"]}]})
 
-    response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=context_parts
+    current_query_and_content = (
+        f"The user's current request is: **{message}**\n\n"
+        f"--- CONTENT ANIME DATA ---\n\n{context_string}"
     )
 
-    reply = response.text if response.text else "I'm here to help, but I didn't understand that."
+    final_contents.append(
+        {"role": "user", "parts": [{"text": current_query_and_content}]}
+    )
+
+    config = GenerateContentConfig(system_instruction=RAG_SYSTEM_INSTRUCTION)
+
+    response = client.models.generate_content(
+        model="gemini-2.5-flash-lite", contents=final_contents, config=config
+    )
+
+    reply = (
+        response.text
+        if response.text
+        else "I'm here to help, but I didn't understand that."
+    )
 
     CONVERSATION_HISTORY.append({"role": "bot", "message": reply})
 
@@ -103,3 +111,21 @@ async def chatbot(message: str, db: AsyncIOMotorDatabase = Depends(get_database)
         CONVERSATION_HISTORY.pop(0)
 
     return reply
+
+
+def format_anime_for_llm(anime: dict) -> str:
+    title_romaji = anime.get("title", {}).get("romaji", "N/A")
+    title_english = anime.get("title", {}).get("english", "N/A")
+    description = anime.get("description", "No description provied").strip()
+    genres = ", ".join(anime.get("genres", []))
+    score = anime.get("averageScore", "N/A")
+    episodes = anime.get("episodes", "N/A")
+
+    return (
+        f"--- ANIME SUGGESTION ---\n"
+        f"Title: {title_romaji} ({title_english})\n"
+        f"Description: {description}\n"
+        f"Genre: {genres}\n"
+        f"Episodes: {episodes}\n"
+        f"Relevance Score: {anime.get("score", "N/A")}"
+    )
