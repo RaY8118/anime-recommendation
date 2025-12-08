@@ -1,7 +1,8 @@
-from collections.abc import AsyncGenerator
-from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 import os
+from collections.abc import AsyncGenerator
+
 from dotenv import load_dotenv
+from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 
 load_dotenv()
 db_uri = os.getenv("MONGODB_URI")

@@ -1,14 +1,13 @@
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
 from app.routers import animes, ping, watchlist
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 app = FastAPI()
 
 app.include_router(animes.router, prefix="/v1/animes", tags=["animes"])
 app.include_router(ping.router, prefix="/v1/ping", tags=["ping"])
-app.include_router(watchlist.router, prefix="/v1/watchlist",
-                   tags=["watchlist"])
+app.include_router(watchlist.router, prefix="/v1/watchlist", tags=["watchlist"])
 
 app.add_middleware(
     CORSMiddleware,
@@ -21,7 +20,4 @@ app.add_middleware(
 
 @app.exception_handler(Exception)
 async def global_exception_handler(requests: Request, exc: Exception):
-    return JSONResponse(
-        status_code=500,
-        content={"message": str(exc)}
-    )
+    return JSONResponse(status_code=500, content={"message": str(exc)})

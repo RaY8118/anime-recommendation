@@ -1,8 +1,9 @@
-from os import wait
-from pydantic import BaseModel, Field
 from datetime import datetime
+from os import wait
 from typing import List, Optional
+
 from app.schemas.animes import AnimeOut, AnimeStatus
+from pydantic import BaseModel, Field
 
 
 class WatchlistItem(BaseModel):

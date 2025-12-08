@@ -1,12 +1,17 @@
-from fastapi import APIRouter, Depends, HTTPException
-from motor.motor_asyncio import AsyncIOMotorDatabase
 from datetime import datetime
 from typing import List, Optional
 
-from app.schemas.watchlist import WatchlistItem, Watchlist, WatchlistResponse, WatchlistAnimeResponseItem
-from app.schemas.animes import AnimeStatus
 from app.dependencies import get_database
+from app.schemas.animes import AnimeStatus
+from app.schemas.watchlist import (
+    Watchlist,
+    WatchlistAnimeResponseItem,
+    WatchlistItem,
+    WatchlistResponse,
+)
 from app.utils.auth0_security import get_current_user_id
+from fastapi import APIRouter, Depends, HTTPException
+from motor.motor_asyncio import AsyncIOMotorDatabase
 
 router = APIRouter()
 
@@ -16,7 +21,7 @@ async def add_to_watchlist(
     anime_id: str,
     user_anime_status: AnimeStatus = AnimeStatus.PLANNED,
     user_id: str = Depends(get_current_user_id),
-    db: AsyncIOMotorDatabase = Depends(get_database)
+    db: AsyncIOMotorDatabase = Depends(get_database),
 ):
     watchlist_collection = db.watchlist
     existing = await watchlist_collection.find_one({"user_id": user_id})
@@ -24,7 +29,7 @@ async def add_to_watchlist(
     new_item = WatchlistItem(
         anime_id=anime_id,
         watched_at=datetime.utcnow(),
-        user_anime_status=user_anime_status
+        user_anime_status=user_anime_status,
     )
 
     if existing:
@@ -37,23 +42,20 @@ async def add_to_watchlist(
         existing["animes"].append(new_item.model_dump())
         existing["updated_at"] = datetime.utcnow()
 
-        await watchlist_collection.update_one(
-            {"user_id": user_id},
-            {"$set": existing}
-        )
+        await watchlist_collection.update_one({"user_id": user_id}, {"$set": existing})
         return WatchlistResponse(watchlist=Watchlist(**existing))
 
     else:
-        new_watchlist = Watchlist(
-            user_id=user_id,
-            animes=[new_item]
-        )
+        new_watchlist = Watchlist(user_id=user_id, animes=[new_item])
         await watchlist_collection.insert_one(new_watchlist.model_dump())
         return WatchlistResponse(watchlist=new_watchlist)
 
 
 @router.get("/", response_model=List[WatchlistAnimeResponseItem])
-async def get_watchlist(user_id: str = Depends(get_current_user_id), db: AsyncIOMotorDatabase = Depends(get_database)):
+async def get_watchlist(
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncIOMotorDatabase = Depends(get_database),
+):
     watchlist_collection = db.watchlist
     anime_collection = db.animes
 
@@ -63,7 +65,8 @@ async def get_watchlist(user_id: str = Depends(get_current_user_id), db: AsyncIO
 
     anime_ids_in_watchlist = [item["anime_id"] for item in existing["animes"]]
     full_animes_cursor = anime_collection.find(
-        {"id": {"$in": [int(aid) for aid in anime_ids_in_watchlist]}})
+        {"id": {"$in": [int(aid) for aid in anime_ids_in_watchlist]}}
+    )
     full_animes_data = await full_animes_cursor.to_list(length=None)
 
     anime_data_map = {str(anime["id"]): anime for anime in full_animes_data}
@@ -86,9 +89,12 @@ async def get_watchlist(user_id: str = Depends(get_current_user_id), db: AsyncIO
                 source=full_anime.get("source"),
                 studios=full_anime.get("studios"),
                 coverImage=full_anime.get("coverImage"),
-                user_anime_status=AnimeStatus(item.get("user_anime_status")) if item.get(
-                    "user_anime_status") else None,
-                watched_at=item.get("watched_at")
+                user_anime_status=(
+                    AnimeStatus(item.get("user_anime_status"))
+                    if item.get("user_anime_status")
+                    else None
+                ),
+                watched_at=item.get("watched_at"),
             )
             combined_animes_response.append(combined_anime)
 
@@ -99,7 +105,7 @@ async def get_watchlist(user_id: str = Depends(get_current_user_id), db: AsyncIO
 async def get_watchlist_item(
     anime_id: str,
     user_id: str = Depends(get_current_user_id),
-    db: AsyncIOMotorDatabase = Depends(get_database)
+    db: AsyncIOMotorDatabase = Depends(get_database),
 ):
     watchlist_collection = db.watchlist
     anime_collection = db.animes
@@ -129,9 +135,12 @@ async def get_watchlist_item(
                 source=full_anime.get("source"),
                 studios=full_anime.get("studios"),
                 coverImage=full_anime.get("coverImage"),
-                user_anime_status=AnimeStatus(item.get("user_anime_status")) if item.get(
-                    "user_anime_status") else None,
-                watched_at=item.get("watched_at")
+                user_anime_status=(
+                    AnimeStatus(item.get("user_anime_status"))
+                    if item.get("user_anime_status")
+                    else None
+                ),
+                watched_at=item.get("watched_at"),
             )
 
     return None
@@ -141,7 +150,7 @@ async def get_watchlist_item(
 async def delete_from_watchlist(
     anime_id: str,
     user_id: str = Depends(get_current_user_id),
-    db: AsyncIOMotorDatabase = Depends(get_database)
+    db: AsyncIOMotorDatabase = Depends(get_database),
 ):
     watchlist_collection = db.watchlist
 
@@ -149,19 +158,14 @@ async def delete_from_watchlist(
     if not existing:
         raise HTTPException(status_code=404, detail="Watchlist not found")
 
-    update_animes = [a for a in existing["animes"]
-                     if a["anime_id"] != anime_id]
+    update_animes = [a for a in existing["animes"] if a["anime_id"] != anime_id]
     if len(update_animes) == len(existing["animes"]):
-        raise HTTPException(
-            status_code=404, detail="Anime not found in watchlist")
+        raise HTTPException(status_code=404, detail="Anime not found in watchlist")
 
     existing["animes"] = update_animes
     existing["updated_at"] = datetime.utcnow()
 
-    await watchlist_collection.update_one(
-        {"user_id": user_id},
-        {"$set": existing}
-    )
+    await watchlist_collection.update_one({"user_id": user_id}, {"$set": existing})
 
     return WatchlistResponse(watchlist=Watchlist(**existing))
 
@@ -171,7 +175,7 @@ async def update_watchlist_item(
     anime_id: str,
     new_status: AnimeStatus,
     user_id: str = Depends(get_current_user_id),
-    db: AsyncIOMotorDatabase = Depends(get_database)
+    db: AsyncIOMotorDatabase = Depends(get_database),
 ):
     watchlist_collection = db.watchlist
     existing = await watchlist_collection.find_one({"user_id": user_id})
@@ -186,14 +190,10 @@ async def update_watchlist_item(
             break
 
     if not updated:
-        raise HTTPException(
-            status_code=404, detail="Anime not found in watchlist")
+        raise HTTPException(status_code=404, detail="Anime not found in watchlist")
 
     existing["updated_at"] = datetime.utcnow()
 
-    await watchlist_collection.update_one(
-        {"user_id": user_id},
-        {"$set": existing}
-    )
+    await watchlist_collection.update_one({"user_id": user_id}, {"$set": existing})
 
     return WatchlistResponse(watchlist=Watchlist(**existing))

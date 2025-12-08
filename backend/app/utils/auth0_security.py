@@ -1,9 +1,10 @@
 import json
-from urllib.request import urlopen
-from authlib.jose import jwt, JsonWebKey
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import os
+from urllib.request import urlopen
+
+from authlib.jose import JsonWebKey, jwt
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 AUTH0_DOMAIN = os.getenv("AUTH0_DOMAIN")
 API_AUDIENCE = os.getenv("AUTH0_API_AUDIENCE")
@@ -42,7 +43,9 @@ def get_current_user(
         )
 
 
-def get_current_user_id(credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)):
+def get_current_user_id(
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+):
     claims = get_current_user(credentials)
     user_id = claims.get("sub")
     # print("✅ USER ID:", user_id)

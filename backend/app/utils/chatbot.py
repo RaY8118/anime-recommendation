@@ -1,9 +1,11 @@
 from app.utils.embeddings import generate_embeddings
 import numpy as np
-from app.utils.anime_api import process_anime
-from google import genai
-from fastapi import Depends
 from app.dependencies import get_database
+from app.utils.anime_api import process_anime
+from app.utils.embeddings import generate_embeddings
+from fastapi import Depends
+from google import genai
+from google.genai.types import GenerateContentConfig
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 client = genai.Client()
