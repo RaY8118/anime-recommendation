@@ -19,7 +19,6 @@ from app.utils.embeddings import generate_embeddings
 from app.utils.fetch_status import get_current_page, update_current_page
 from app.utils.validate_params import validate_query_params
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
-from google import genai
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 router = APIRouter()
