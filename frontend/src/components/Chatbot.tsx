@@ -60,7 +60,7 @@ const ChatbotUi = () => {
 
   useEffect(() => {
     handleGetModels();
-  }, [selectedModel]);
+  }, []);
 
   const handleSendMessage = () => {
     if (input.trim()) {
