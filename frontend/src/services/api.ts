@@ -9,7 +9,7 @@ import type {
   MessageResponse,
   RecommendationsParams,
 } from "../types/anime";
-import type { WatchlistResponse, WatchlistAnimeOut } from "../types/watchlist";
+import type { WatchlistAnimeOut, WatchlistResponse } from "../types/watchlist";
 const API_URL = import.meta.env.VITE_API_URL;
 
 const api = axios.create({
@@ -127,10 +127,15 @@ export const getTopRated = async (
   });
 };
 
+export const getChatbotModels = async () => {
+  return api.get(`${API_URL}/v1/animes/chatbot/models`);
+};
+
 export const sendChatMessage = async (
-  message: string
+  message: string,
+  model_id: string = "google/gemini-2.0-flash-exp:free"
 ): Promise<AxiosResponse<ChatbotResponse>> => {
-  return api.post(`${API_URL}/v1/animes/chatbot`, { message });
+  return api.post(`${API_URL}/v1/animes/chatbot`, { message, model_id });
 };
 
 export const getWatchlist = async (

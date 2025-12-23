@@ -1,9 +1,9 @@
 import { useMutation } from "@tanstack/react-query";
 import axios from "axios";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { IoChatbubbleEllipsesOutline, IoCloseOutline } from "react-icons/io5";
 import ReactMarkdown from "react-markdown";
-import { sendChatMessage } from "../services/api";
+import { getChatbotModels, sendChatMessage } from "../services/api";
 
 const ChatbotUi = () => {
   const [messages, setMessages] = useState([
@@ -11,9 +11,15 @@ const ChatbotUi = () => {
   ]);
   const [input, setInput] = useState("");
   const [isOpen, setIsOpen] = useState(false);
+  const [availableModels, setAvailableModels] = useState<
+    { id: string; label: string }[]
+  >([]);
+  const [selectedModel, setSelectedModel] = useState(
+    "google/gemini-2.0-flash-exp:free"
+  );
 
   const mutation = useMutation({
-    mutationFn: sendChatMessage,
+    mutationFn: (msg: string) => sendChatMessage(msg, selectedModel),
     onMutate: (message) => {
       setMessages((prev) => [...prev, { from: "user", text: message }]);
       setInput("");
@@ -38,6 +44,24 @@ const ChatbotUi = () => {
     },
   });
 
+  const handleGetModels = async () => {
+    try {
+      const res = await getChatbotModels();
+      const modelsArray = res.data.models || [];
+      setAvailableModels(modelsArray);
+
+      if (modelsArray.length > 0) {
+        setSelectedModel(modelsArray[0].id);
+      }
+    } catch (error) {
+      console.error("Error fetching models:", error);
+    }
+  };
+
+  useEffect(() => {
+    handleGetModels();
+  }, [selectedModel]);
+
   const handleSendMessage = () => {
     if (input.trim()) {
       mutation.mutate(input);
@@ -48,7 +72,15 @@ const ChatbotUi = () => {
     <div className="fixed bottom-4 right-8 z-50">
       {isOpen && (
         <div
-          className="resize-y overflow-auto bg-card dark:bg-card rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 w-80 md:w-96 max-h-[80vh] min-h-[200px] flex flex-col"
+          className={`
+        fixed z-50 flex flex-col transition-all duration-300 ease-in-out
+        /* Mobile: Full screen with small margins */
+        bottom-0 right-0 left-0 top-0 m-0 rounded-none w-full h-full 
+        /* Desktop: Floating widget style */
+        md:bottom-4 md:right-8 md:left-auto md:top-auto md:m-0
+        md:w-[400px] md:max-h-[700px] md:rounded-lg md:shadow-2xl md:border
+        bg-card dark:bg-card border-gray-200 dark:border-gray-700
+      `}
           style={{ resize: "both", minWidth: "320px" }}
         >
           <div className="flex justify-between items-center p-3 border-b border-gray-200 dark:border-gray-700 bg-primary rounded-t-lg">
@@ -99,27 +131,41 @@ const ChatbotUi = () => {
               </div>
             )}
           </div>
-          <div className="p-3 border-t border-gray-200 dark:border-gray-700 flex gap-2">
-            <input
-              type="text"
-              className="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark"
-              placeholder="Type your message..."
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyPress={(e) => {
-                if (e.key === "Enter") {
-                  handleSendMessage();
-                }
-              }}
-              disabled={mutation.isPending}
-            />
-            <button
-              onClick={handleSendMessage}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
-              disabled={mutation.isPending}
-            >
-              Send
-            </button>
+          <div className="p-3 border-t border-gray-200 dark:border-gray-700 bg-card mt-auto shrink-0">
+            <div className="flex gap-2 items-center w-full">
+              <input
+                type="text"
+                className="flex-1 min-w-0 p-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-background-light dark:bg-background-dark text-text"
+                placeholder="Type your message..."
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+                disabled={mutation.isPending}
+              />
+
+              <div className="flex items-center gap-1.5 shrink-0">
+                <select
+                  value={selectedModel}
+                  onChange={(e) => setSelectedModel(e.target.value)}
+                  className="text-[10px] md:text-xs p-1.5 max-w-[80px] md:max-w-[120px] rounded border border-gray-300 dark:border-gray-600 bg-background-light dark:bg-background-dark text-text outline-none cursor-pointer"
+                >
+                  {availableModels.map((model) => (
+                    <option key={model.id} value={model.id}>
+                      {model.label}
+                    </option>
+                  ))}
+                </select>
+
+                <button
+                  onClick={handleSendMessage}
+                  className="bg-blue-600 text-white p-2 md:px-4 md:py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                  disabled={mutation.isPending}
+                >
+                  <span className="hidden md:inline">Send</span>
+                  <span className="md:hidden">➔</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
