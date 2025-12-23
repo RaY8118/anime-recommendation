@@ -88,8 +88,22 @@ class QueryMode(str, Enum):
     description = "description"
 
 
+class ModelID(str, Enum):
+    GEMINI = "google/gemini-2.0-flash-exp:free"
+    GPT_OSS = "openai/gpt-oss-20b:free"
+    LLAMA = "meta-llama/llama-3.3-70b-instruct:free"
+
+
+AVAILABLE_MODELS = [
+    {"id": ModelID.GEMINI, "label": "Gemini 2.0 (Fast)"},
+    {"id": ModelID.GPT_OSS, "label": "GPT-OSS (Creative)"},
+    {"id": ModelID.LLAMA, "label": "Llama 3.3 (Smart)"},
+]
+
+
 class ChatBotRequest(BaseModel):
     message: str
+    model_id: ModelID = ModelID.GEMINI
 
 
 class ChatBotResponse(BaseModel):

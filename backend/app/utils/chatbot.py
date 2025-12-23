@@ -1,19 +1,24 @@
+import os
+
 import numpy as np
 from app.dependencies import get_database
-from app.utils.anime_api import process_anime
 from app.utils.embeddings import generate_embeddings
 from fastapi import Depends
-from google import genai
-from google.genai.types import GenerateContentConfig
 from motor.motor_asyncio import AsyncIOMotorDatabase
+from openai import OpenAI
 
-client = genai.Client()
+openrouter_client = OpenAI(
+    base_url="https://openrouter.ai/api/v1",
+    api_key=os.environ.get("OPENROUTER_API_KEY"),
+)
 
 CONVERSATION_HISTORY = []
 VALID_ROLES = {"user", "model"}
 
 
-async def chatbot(message: str, db: AsyncIOMotorDatabase = Depends(get_database)):
+async def openrouter_chatbot(
+    message: str, model_id: str, db: AsyncIOMotorDatabase = Depends(get_database)
+):
     anime_collection = db.animes
     CONVERSATION_HISTORY.append({"role": "user", "message": message})
 
@@ -67,43 +72,39 @@ async def chatbot(message: str, db: AsyncIOMotorDatabase = Depends(get_database)
         "2. **Persona:** Respond in a friendly, enthusiastic, and knowledgeable tone.\n"
         "3. **Recommendation Structure:** Suggest **1 to 3** of the most relevant animes. For each, use the provided data to:\n"
         "   * Mention the **English and Romaji Title**.\n"
-        "   * Briefly summarize the **Description** (do not just paste it).\n"
+        "   * Explain the description in two to three lines nothing more.\n"
         "   * Highlight the **Genre(s)**.\n"
         "4. **Strict Constraint:** You **MUST NOT** use any external knowledge. All recommendations and details must be derived *only* from the 'CONTEXT ANIME DATA'.\n"
         "5. **Fallback:** If the context data is empty or entirely irrelevant, politely state: 'I apologize, but based on the available data, I couldn't find a suitable recommendation for your specific request. Perhaps try a query with different themes or genres?'"
+        "6. **Additional info** If the user asks then only give more descriptive information about the anime. Do not give any additional information about the anime's plot or characters."
     )
 
-    final_contents = []
+    messages = [{"role": "user", "content": RAG_SYSTEM_INSTRUCTION}]
 
     for msg in CONVERSATION_HISTORY[-10:]:
-        role = msg["role"]
-        if role == "bot":
-            role = "model"
-        if role not in ["user", "model"]:
-            continue
-
-        final_contents.append({"role": role, "parts": [{"text": msg["message"]}]})
+        role = "assistant" if msg["role"] == "bot" else "user"
+        messages.append({"role": role, "content": msg["message"]})
 
     current_query_and_content = (
         f"The user's current request is: **{message}**\n\n"
         f"--- CONTENT ANIME DATA ---\n\n{context_string}"
     )
 
-    final_contents.append(
-        {"role": "user", "parts": [{"text": current_query_and_content}]}
-    )
+    messages.append({"role": "user", "content": current_query_and_content})
 
-    config = GenerateContentConfig(system_instruction=RAG_SYSTEM_INSTRUCTION)
-
-    response = client.models.generate_content(
-        model="gemini-2.5-flash-lite", contents=final_contents, config=config
-    )
-
-    reply = (
-        response.text
-        if response.text
-        else "I'm here to help, but I didn't understand that."
-    )
+    try:
+        response = openrouter_client.chat.completions.create(
+            model=model_id,
+            messages=messages,
+            extra_headers={
+                "HTTP-Referer": "http://localhost:3000",
+                "X-Title": "Anime Genie Showcase",
+            },
+        )
+        reply = response.choices[0].message.content
+    except Exception as e:
+        print(f"Error: {e}")
+        reply = "I'm having trouble connecting to my brain right now!"
 
     CONVERSATION_HISTORY.append({"role": "bot", "message": reply})
 

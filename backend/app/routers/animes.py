@@ -4,6 +4,7 @@ from typing import Optional
 import numpy as np
 from app.dependencies import get_database
 from app.schemas.animes import (
+    AVAILABLE_MODELS,
     AnimeListResponse,
     AnimeResponse,
     AnimesListResponse,
@@ -14,7 +15,7 @@ from app.schemas.animes import (
     QueryMode,
 )
 from app.utils.anime_api import get_anime
-from app.utils.chatbot import chatbot
+from app.utils.chatbot import openrouter_chatbot
 from app.utils.embeddings import generate_embeddings
 from app.utils.fetch_status import get_current_page, update_current_page
 from app.utils.validate_params import validate_query_params
@@ -381,11 +382,16 @@ async def get_anime_by_name_endpoint(
     return {"anime": anime}
 
 
+@router.get("/chatbot/models")
+async def get_chatbot_models():
+    return {"models": AVAILABLE_MODELS}
+
+
 @router.post("/chatbot", response_model=ChatBotResponse)
 async def Chatbot(
     request: ChatBotRequest, db: AsyncIOMotorDatabase = Depends(get_database)
 ):
-    results = await chatbot(request.message, db)
+    results = await openrouter_chatbot(request.message, request.model_id, db)
     if not results:
         raise HTTPException(status_code=404, detail="No results found")
     return {"results": results}
