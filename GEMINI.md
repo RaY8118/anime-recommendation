@@ -10,7 +10,7 @@ This is a full-stack web application for anime recommendations. The backend is b
 - Python
 - FastAPI
 - MongoDB
-- Gemini for embeddings and chatbot
+- Gemini for embeddings, OpenRouter for multi-model chatbot
 
 ### Frontend
 
@@ -60,7 +60,7 @@ The `backend/app/utils/anime_api.py` file is responsible for fetching data from 
 
 ## Chatbot
 
-The `backend/app/utils/chatbot.py` file implements the chatbot functionality. It uses the Gemini API to generate responses. The `chatbot` function takes a user's message, generates an embedding for it, and then uses a vector search to find similar anime in the database. The results are then formatted and sent to the Gemini model along with a system prompt to generate a response.
+The `backend/app/utils/chatbot.py` file implements the chatbot functionality. It uses the OpenRouter API to generate responses with various AI models. The `chatbot` function takes a user's message, generates an embedding for it, and then uses a vector search to find similar anime in the database. The results are then formatted and sent to the selected model along with a system prompt to generate a response.
 
 ## Building and Running
 

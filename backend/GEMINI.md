@@ -9,7 +9,8 @@ This is the backend for the NekoRec anime recommendation system. It is a Python-
 - **MongoDB:** The primary database for storing anime data, user information, and other application-related data.
 - **Uvicorn:** A lightning-fast ASGI server for running the FastAPI application.
 - **Pydantic:** Used for data validation and settings management.
-- **Gemini:** The Gemini API is used for generating embeddings and for the chatbot functionality.
+- **Gemini:** The Gemini API is used for generating embeddings.
+- **OpenRouter:** The OpenRouter API is used for the multi-model chatbot functionality.
 
 ## Project Structure
 

@@ -9,7 +9,7 @@ NekoRec is a full-stack web application designed to provide personalized anime r
 - 🏷️ **Genre Exploration:** Filter and discover anime by various genres.
 - ❤️ **Personalized Recommendations:** Get anime recommendations based on content similarity (e.g., description, genres).
 - 💡 **Suggest Anime:** Functionality for users to suggest new anime
-- 💬 **AI Chatbot:** Interact with an AI chatbot for anime recommendations and information.
+- 💬 **AI Chatbot:** Interact with a multi-model AI chatbot for anime recommendations and information. Users can select from various models to customize their experience.
 
 ## 🛠️ Technologies Used
 
@@ -19,7 +19,7 @@ NekoRec is a full-stack web application designed to provide personalized anime r
 - **FastAPI:** A modern, fast (high-performance) web framework for building APIs with Python 3.7+.
 - **uv:** A fast Python package installer and resolver.
 - **Gemini Embeddings:** Used for generating vector embeddings of anime descriptions for content-based recommendations.
-- **Gemini API:** Utilized for the AI chatbot functionality.
+- **OpenRouter:** Enables multi-model support for the chatbot, allowing users to select from a variety of large language models.
 - **MongoDB:** NoSQL database used for storing anime data and embeddings.
 - **Anilist API:** Data for anime is sourced from the Anilist API.
 - **Data Processing:** Custom scripts for fetching anime data, text cleaning, generating embeddings, and calculating similarity for recommendations.
