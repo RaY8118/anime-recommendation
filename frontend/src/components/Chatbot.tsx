@@ -15,7 +15,7 @@ const ChatbotUi = () => {
     { id: string; label: string }[]
   >([]);
   const [selectedModel, setSelectedModel] = useState(
-    "google/gemini-2.0-flash-exp:free"
+    "mistralai/devstral-2512:free"
   );
 
   const mutation = useMutation({

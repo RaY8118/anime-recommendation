@@ -133,7 +133,7 @@ export const getChatbotModels = async () => {
 
 export const sendChatMessage = async (
   message: string,
-  model_id: string = "google/gemini-2.0-flash-exp:free"
+  model_id: string = "mistralai/devstral-2512:free"
 ): Promise<AxiosResponse<ChatbotResponse>> => {
   return api.post(`${API_URL}/v1/animes/chatbot`, { message, model_id });
 };
