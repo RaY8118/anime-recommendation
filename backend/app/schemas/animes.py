@@ -89,13 +89,13 @@ class QueryMode(str, Enum):
 
 
 class ModelID(str, Enum):
-    GEMINI = "google/gemini-2.0-flash-exp:free"
+    MISTRAL = "mistralai/devstral-2512:free"
     GPT_OSS = "openai/gpt-oss-20b:free"
     LLAMA = "meta-llama/llama-3.3-70b-instruct:free"
 
 
 AVAILABLE_MODELS = [
-    {"id": ModelID.GEMINI, "label": "Gemini 2.0 (Fast)"},
+    {"id": ModelID.MISTRAL, "label": "MistralAI (Fast)"},
     {"id": ModelID.GPT_OSS, "label": "GPT-OSS (Creative)"},
     {"id": ModelID.LLAMA, "label": "Llama 3.3 (Smart)"},
 ]
@@ -103,7 +103,7 @@ AVAILABLE_MODELS = [
 
 class ChatBotRequest(BaseModel):
     message: str
-    model_id: ModelID = ModelID.GEMINI
+    model_id: ModelID = ModelID.MISTRAL
 
 
 class ChatBotResponse(BaseModel):

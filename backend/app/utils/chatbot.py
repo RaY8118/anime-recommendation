@@ -14,6 +14,23 @@ openrouter_client = OpenAI(
 
 CONVERSATION_HISTORY = []
 VALID_ROLES = {"user", "model"}
+BASE_RAG_INFO = "Suggest 1-3 animes based EXCLUSIVELY on the provided context data."
+MODEL_SPECIFIC_INSTRUCTIONS = {
+    "mistralai/devstral-2512:free": (
+        f"{BASE_RAG_INFO} Focus on being fast, concise, and friendly. "
+        "Use bullet points for readability."
+    ),
+    "openai/gpt-oss-20b:free": (
+        f"{BASE_RAG_INFO} Be creative and 'Otaku-like'. "
+        "Explain WHY these animes match the user's vibe using colorful language."
+    ),
+    "meta-llama/llama-3.3-70b-instruct:free": (
+        f"{BASE_RAG_INFO} Be highly analytical. Compare the genres and scores "
+        "of the suggestions to give a logical reason for each pick. no need to include"
+    ),
+}
+
+DEFAULT_PROMPT = f"{BASE_RAG_INFO} Be a helpful anime assistant."
 
 
 async def openrouter_chatbot(
@@ -64,22 +81,8 @@ async def openrouter_chatbot(
 
     context_string = "\n\n".join(formatted_animes)
 
-    RAG_SYSTEM_INSTRUCTION = (
-        "You are a highly engaging and expert anime recommendation bot named 'Anime Genie'.\n"
-        "Your primary goal is to provide **personalized and insightful** anime suggestions based **EXCLUSIVELY** on the 'CONTEXT ANIME DATA' provided.\n\n"
-        "**Guidelines:**\n"
-        "1. **Analyze:** Carefully review the user's query and the provided anime data to find the best matches.\n"
-        "2. **Persona:** Respond in a friendly, enthusiastic, and knowledgeable tone.\n"
-        "3. **Recommendation Structure:** Suggest **1 to 3** of the most relevant animes. For each, use the provided data to:\n"
-        "   * Mention the **English and Romaji Title**.\n"
-        "   * Explain the description in two to three lines nothing more.\n"
-        "   * Highlight the **Genre(s)**.\n"
-        "4. **Strict Constraint:** You **MUST NOT** use any external knowledge. All recommendations and details must be derived *only* from the 'CONTEXT ANIME DATA'.\n"
-        "5. **Fallback:** If the context data is empty or entirely irrelevant, politely state: 'I apologize, but based on the available data, I couldn't find a suitable recommendation for your specific request. Perhaps try a query with different themes or genres?'"
-        "6. **Additional info** If the user asks then only give more descriptive information about the anime. Do not give any additional information about the anime's plot or characters."
-    )
-
-    messages = [{"role": "user", "content": RAG_SYSTEM_INSTRUCTION}]
+    system_instruction = MODEL_SPECIFIC_INSTRUCTIONS.get(model_id, DEFAULT_PROMPT)
+    messages = [{"role": "user", "content": system_instruction}]
 
     for msg in CONVERSATION_HISTORY[-10:]:
         role = "assistant" if msg["role"] == "bot" else "user"
@@ -95,7 +98,7 @@ async def openrouter_chatbot(
     try:
         response = openrouter_client.chat.completions.create(
             model=model_id,
-            messages=messages,
+            messages=messages,  # type: ignore
             extra_headers={
                 "HTTP-Referer": "http://localhost:3000",
                 "X-Title": "Anime Genie Showcase",
