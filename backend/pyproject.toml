@@ -1,7 +1,7 @@
 [project]
 name = "backend"
 version = "0.1.0"
-description = "Add your description here"
+description = "Backend services for the anime recommendation application."
 readme = "README.md"
 requires-python = "==3.12.3"
 dependencies = [
