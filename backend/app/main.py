@@ -22,38 +22,37 @@ app.add_middleware(
 
 logger = logging.getLogger("uvicorn.access")
 
+
 # Production middleware
-# @app.middleware("http")
-# async def log_request_time(request: Request, call_next):
-#     start = time.perf_counter()
-#     response = await call_next(request)
-#     duration = (time.perf_counter() - start) * 1000
-#
-#     logger.info(
-#         "%s %s → %.2f ms | %s",
-#         request.method,
-#         request.url.path,
-#         duration,
-#         response.status_code,
-#     )
-#
-#     return response
-
-# Development middleware
-
-
 @app.middleware("http")
 async def log_request_time(request: Request, call_next):
-    start_time = time.perf_counter()
+    start = time.perf_counter()
     response = await call_next(request)
-    duration = (time.perf_counter() - start_time) * 1000
+    duration = (time.perf_counter() - start) * 1000
 
-    print(
-        f"{request.method} {request.url.path} "
-        f"→ {duration:.2f} ms | status={response.status_code}"
+    logger.info(
+        "%s %s → %.2f ms | %s",
+        request.method,
+        request.url.path,
+        duration,
+        response.status_code,
     )
 
     return response
+
+# Development middleware
+# @app.middleware("http")
+# async def log_request_time(request: Request, call_next):
+#     start_time = time.perf_counter()
+#     response = await call_next(request)
+#     duration = (time.perf_counter() - start_time) * 1000
+#
+#     print(
+#         f"{request.method} {request.url.path} "
+#         f"→ {duration:.2f} ms | status={response.status_code}"
+#     )
+#
+#     return response
 
 
 @app.exception_handler(Exception)
