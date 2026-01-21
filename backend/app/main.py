@@ -3,6 +3,8 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import time
+import logging
+
 app = FastAPI()
 
 app.include_router(animes.router, prefix="/v1/animes", tags=["animes"])
@@ -17,6 +19,27 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+logger = logging.getLogger("uvicorn.access")
+
+# Production middleware
+# @app.middleware("http")
+# async def log_request_time(request: Request, call_next):
+#     start = time.perf_counter()
+#     response = await call_next(request)
+#     duration = (time.perf_counter() - start) * 1000
+#
+#     logger.info(
+#         "%s %s → %.2f ms | %s",
+#         request.method,
+#         request.url.path,
+#         duration,
+#         response.status_code,
+#     )
+#
+#     return response
+
+# Development middleware
 
 
 @app.middleware("http")

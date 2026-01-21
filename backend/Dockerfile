@@ -16,4 +16,4 @@ RUN uv sync --locked
 EXPOSE 8000
 
 # Run using uv binary
-CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD [  "uv",  "run",  "gunicorn",  "app.main:app",  "-k", "uvicorn.workers.UvicornWorker",  "--workers", "2",  "--bind", "0.0.0.0:8000",  "--timeout", "60",  "--access-logfile", "-"]
