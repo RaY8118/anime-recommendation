@@ -4,7 +4,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import time
 import logging
+import os
 
+env = os.getenv("ENV")
 app = FastAPI()
 
 app.include_router(animes.router, prefix="/v1/animes", tags=["animes"])
@@ -12,49 +14,49 @@ app.include_router(ping.router, prefix="/v1/ping", tags=["ping"])
 app.include_router(watchlist.router, prefix="/v1/watchlist",
                    tags=["watchlist"])
 
+logger = logging.getLogger("uvicorn.access")
+
+if env == "PRODUCTION":
+    allowed_origins = [
+        "https://anime.pages.dev",
+    ]
+else:
+    allowed_origins = [
+        "http://localhost:5174",
+    ]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-logger = logging.getLogger("uvicorn.access")
 
-
-# Production middleware
 @app.middleware("http")
 async def log_request_time(request: Request, call_next):
     start = time.perf_counter()
     response = await call_next(request)
     duration = (time.perf_counter() - start) * 1000
 
-    logger.info(
-        "%s %s → %.2f ms | %s",
-        request.method,
-        request.url.path,
-        duration,
-        response.status_code,
-    )
+    if env == "PRODUCTION":
+        logger.info(
+            "%s %s → %.2f ms | %s",
+            request.method,
+            request.url.path,
+            duration,
+            response.status_code,
+        )
+    else:
+        print(
+            f"{request.method} {request.url.path} "
+            f"→ {duration:.2f} ms | status={response.status_code}"
+        )
 
     return response
 
-# Development middleware
-# @app.middleware("http")
-# async def log_request_time(request: Request, call_next):
-#     start_time = time.perf_counter()
-#     response = await call_next(request)
-#     duration = (time.perf_counter() - start_time) * 1000
-#
-#     print(
-#         f"{request.method} {request.url.path} "
-#         f"→ {duration:.2f} ms | status={response.status_code}"
-#     )
-#
-#     return response
-
 
 @app.exception_handler(Exception)
-async def global_exception_handler(requests: Request, exc: Exception):
+async def global_exception_handler(request: Request, exc: Exception):
     return JSONResponse(status_code=500, content={"message": str(exc)})
