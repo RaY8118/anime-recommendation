@@ -1,11 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { AnimeCard } from "../components/AnimeCard";
 import { Error } from "../components/Error";
-import GenreHighlights from "../components/GenreHighlights"; // Keep this import
+import GenreHighlights from "../components/GenreHighlights";
 import { Loader } from "../components/Loader";
 import TopRatedList from "../components/TopRatedList";
 import { getRandomAnime, getTopRated } from "../services/api";
-import { Tab } from '@headlessui/react'; // Import Tab components
+import { Tab } from '@headlessui/react';
 
 const Home = () => {
   const {
@@ -37,7 +37,7 @@ const Home = () => {
     staleTime: 1000 * 60 * 5,
   });
 
-  const genres = ["Action", "Romance", "Comedy", "Adventure"]; // Define genres
+  const genres = ["Action", "Romance", "Comedy", "Adventure"];
 
   return (
     <div className="container mx-auto px-4 py-10">
@@ -79,10 +79,9 @@ const Home = () => {
                 className={({ selected }) =>
                   `w-full rounded-lg py-2.5 text-sm font-medium leading-5
                   ring-offset-2 focus:outline-none focus:ring-2
-                  ${
-                    selected
-                      ? 'bg-primary text-white shadow ring-primary'
-                      : 'text-text-light hover:bg-primary/10 hover:text-primary'
+                  ${selected
+                    ? 'bg-primary text-white shadow ring-primary'
+                    : 'text-text-light hover:bg-primary/10 hover:text-primary'
                   }`
                 }
               >

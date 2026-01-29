@@ -7,6 +7,7 @@ import logging
 import os
 
 env = os.getenv("ENV")
+allowed_origins = os.getenv("ALLOWED_ORIGINS")
 app = FastAPI()
 
 app.include_router(animes.router, prefix="/v1/animes", tags=["animes"])
@@ -15,15 +16,6 @@ app.include_router(watchlist.router, prefix="/v1/watchlist",
                    tags=["watchlist"])
 
 logger = logging.getLogger("uvicorn.access")
-
-if env == "PRODUCTION":
-    allowed_origins = [
-        "https://anime.pages.dev",
-    ]
-else:
-    allowed_origins = [
-        "http://localhost:5174",
-    ]
 
 app.add_middleware(
     CORSMiddleware,
