@@ -16,18 +16,10 @@ CONVERSATION_HISTORY = []
 VALID_ROLES = {"user", "model"}
 BASE_RAG_INFO = "Suggest 1-3 animes based EXCLUSIVELY on the provided context data."
 MODEL_SPECIFIC_INSTRUCTIONS = {
-    "mistralai/devstral-2512:free": (
+    "google/gemma-3n-e4b-it:free": (
         f"{BASE_RAG_INFO} Focus on being fast, concise, and friendly. "
         "Use bullet points for readability."
-    ),
-    "openai/gpt-oss-20b:free": (
-        f"{BASE_RAG_INFO} Be creative and 'Otaku-like'. "
-        "Explain WHY these animes match the user's vibe using colorful language."
-    ),
-    "meta-llama/llama-3.3-70b-instruct:free": (
-        f"{BASE_RAG_INFO} Be highly analytical. Compare the genres and scores "
-        "of the suggestions to give a logical reason for each pick. no need to include"
-    ),
+    )
 }
 
 DEFAULT_PROMPT = f"{BASE_RAG_INFO} Be a helpful anime assistant."
