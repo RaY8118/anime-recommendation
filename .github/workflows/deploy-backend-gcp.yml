@@ -51,7 +51,7 @@ jobs:
           service: ${{ env.SERVICE_NAME }}
           region: ${{ env.REGION }}
           image: ${{ env.IMAGE_TAG }}
-          flags: "--allow-unauthenticated"
+          flags: "--allow-unauthenticated --port 8000"
 
       - name: Show Output
         run: echo ${{ steps.deploy.outputs.url }}

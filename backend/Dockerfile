@@ -16,4 +16,4 @@ RUN uv sync --locked
 EXPOSE 8000
 
 # Run using uv binary
-CMD [ "uv", "run", "gunicorn", "app.main:app", "-k", "uvicorn.workers.UvicornWorker", "--workers", "2", "--bind", "0.0.0.0:${PORT:-8000}", "--timeout", "60", "--access-logfile", "-" ]
+CMD uv run gunicorn app.main:app -k uvicorn.workers.UvicornWorker --workers 2 --bind 0.0.0.0:${PORT:-8000} --timeout 60 --access-logfile -
