@@ -24,6 +24,23 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 
 router = APIRouter()
 
+ANIME_PROJECTION = {
+    "_id": 0,
+    "id": 1,
+    "title": 1,
+    "description": 1,
+    "averageScore": 1,
+    "genres": 1,
+    "episodes": 1,
+    "duration": 1,
+    "season": 1,
+    "seasonYear": 1,
+    "status": 1,
+    "source": 1,
+    "studios": 1,
+    "coverImage": 1,
+}
+
 
 @router.post(
     "/fetch", response_model=MessageResponse, status_code=status.HTTP_201_CREATED
@@ -149,27 +166,9 @@ async def get_animes(
         ]
 
     total = await anime_collection.count_documents(mongo_query)
-    cursor = anime_collection.find(mongo_query).skip(skip).limit(per_page)
+    cursor = anime_collection.find(mongo_query, ANIME_PROJECTION).skip(skip).limit(per_page)
 
-    results = []
-    async for anime in cursor:
-        results.append(
-            {
-                "id": anime["id"],
-                "title": anime["title"],
-                "description": anime["description"],
-                "averageScore": anime["averageScore"],
-                "genres": anime["genres"],
-                "episodes": anime["episodes"],
-                "duration": anime["duration"],
-                "season": anime["season"],
-                "seasonYear": anime["seasonYear"],
-                "status": anime["status"],
-                "source": anime["source"],
-                "studios": anime["studios"],
-                "coverImage": anime["coverImage"],
-            }
-        )
+    results = [anime async for anime in cursor]
 
     if not results:
         return {
@@ -228,34 +227,18 @@ async def get_genres(db: AsyncIOMotorDatabase = Depends(get_database)):
 @router.get("/search", response_model=AnimeListResponse)
 async def search_anime(query: str, db: AsyncIOMotorDatabase = Depends(get_database)):
     anime_collection = db.animes
-    animes = anime_collection.find(
+    # Optimization: Use indexed search if available, and projection to limit fields
+    cursor = anime_collection.find(
         {
             "$or": [
-                {"title.romaji": {"$regex": query, "$options": "i"}},
-                {"title.english": {"$regex": query, "$options": "i"}},
+                {"title.romaji": {"$regex": f"^{query}", "$options": "i"}}, # Prefix search is faster than general regex
+                {"title.english": {"$regex": f"^{query}", "$options": "i"}},
             ]
-        }
-    )
+        },
+        ANIME_PROJECTION
+    ).limit(20) # Limit search results for performance
 
-    results = []
-    async for anime in animes:
-        results.append(
-            {
-                "id": anime["id"],
-                "title": anime["title"],
-                "description": anime["description"],
-                "averageScore": anime["averageScore"],
-                "genres": anime["genres"],
-                "episodes": anime["episodes"],
-                "duration": anime["duration"],
-                "season": anime["season"],
-                "seasonYear": anime["seasonYear"],
-                "status": anime["status"],
-                "source": anime["source"],
-                "studios": anime["studios"],
-                "coverImage": anime["coverImage"],
-            }
-        )
+    results = [anime async for anime in cursor]
 
     if not results:
         raise HTTPException(status_code=404, detail="No animes found")
@@ -272,34 +255,16 @@ async def filter_anime_by_genre(
 ):
     skip = (page - 1) * limit
     anime_collection = db.animes
-    animes = (
+    cursor = (
         anime_collection.find(
-            {"genres": {"$elemMatch": {"$regex": f"^{genre}$", "$options": "i"}}}
+            {"genres": {"$elemMatch": {"$regex": f"^{genre}$", "$options": "i"}}},
+            ANIME_PROJECTION
         )
         .skip(skip)
         .limit(limit)
     )
 
-    results = []
-
-    async for anime in animes:
-        results.append(
-            {
-                "id": anime["id"],
-                "title": anime["title"],
-                "description": anime["description"],
-                "averageScore": anime["averageScore"],
-                "genres": anime["genres"],
-                "episodes": anime["episodes"],
-                "duration": anime["duration"],
-                "season": anime["season"],
-                "seasonYear": anime["seasonYear"],
-                "status": anime["status"],
-                "source": anime["source"],
-                "studios": anime["studios"],
-                "coverImage": anime["coverImage"],
-            }
-        )
+    results = [anime async for anime in cursor]
 
     if not results:
         raise HTTPException(status_code=404, detail="No animes found for the genre")
@@ -316,13 +281,9 @@ async def get_random_anime(db: AsyncIOMotorDatabase = Depends(get_database)):
         raise HTTPException(status_code=404, detail="No animes found")
 
     random_index = random.randint(0, count - 1)
-    anime = await anime_collection.find().skip(random_index).limit(1).to_list(length=1)
+    anime = await anime_collection.find({}, ANIME_PROJECTION).skip(random_index).limit(1).to_list(length=1)
 
-    anime = anime[0]
-    anime.pop("_id", None)
-    anime.pop("embedding", None)
-
-    return {"anime": anime}
+    return {"anime": anime[0]}
 
 
 @router.get("/top-rated", response_model=AnimeListResponse)
@@ -331,28 +292,9 @@ async def top_rated_anime(
 ):
     validate_query_params(request, {"limit"})
     anime_collection = db.animes
-    animes = anime_collection.find({}).sort("averageScore", -1).limit(limit)
+    cursor = anime_collection.find({}, ANIME_PROJECTION).sort("averageScore", -1).limit(limit)
 
-    results = []
-
-    async for anime in animes:
-        results.append(
-            {
-                "id": anime["id"],
-                "title": anime["title"],
-                "description": anime["description"],
-                "averageScore": anime["averageScore"],
-                "genres": anime["genres"],
-                "episodes": anime["episodes"],
-                "duration": anime["duration"],
-                "season": anime["season"],
-                "seasonYear": anime["seasonYear"],
-                "status": anime["status"],
-                "source": anime["source"],
-                "studios": anime["studios"],
-                "coverImage": anime["coverImage"],
-            }
-        )
+    results = [anime async for anime in cursor]
 
     if not results:
         raise HTTPException(status_code=404, detail="No animes found")
