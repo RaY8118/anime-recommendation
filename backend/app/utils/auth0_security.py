@@ -11,8 +11,23 @@ API_AUDIENCE = os.getenv("AUTH0_API_AUDIENCE")
 ISSUER = f"https://{AUTH0_DOMAIN}/"
 JWKS_URL = f"{ISSUER}.well-known/jwks.json"
 
-jwks = json.loads(urlopen(JWKS_URL).read())
-public_keys = JsonWebKey.import_key_set(jwks)
+_cached_public_keys = None
+
+
+def get_public_keys():
+    global _cached_public_keys
+    if _cached_public_keys is None:
+        try:
+            with urlopen(JWKS_URL) as response:
+                jwks = json.loads(response.read())
+                _cached_public_keys = JsonWebKey.import_key_set(jwks)
+        except Exception as e:
+            print(f"Error fetching JWKS: {e}")
+            raise HTTPException(
+                status_code=500, detail="Could not verify authentication keys"
+            )
+    return _cached_public_keys
+
 
 bearer_scheme = HTTPBearer()
 
@@ -21,6 +36,7 @@ def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
 ):
     token = credentials.credentials
+    public_keys = get_public_keys()
     try:
         claims = jwt.decode(token, public_keys)
         claims.validate()

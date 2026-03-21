@@ -6,8 +6,10 @@ import time
 import logging
 import os
 
-env = os.getenv("ENV")
-allowed_origins = os.getenv("ALLOWED_ORIGINS")
+env = os.getenv("ENV", "DEVELOPMENT")
+raw_origins = os.getenv("ALLOWED_ORIGINS", "*")
+allowed_origins = [origin.strip() for origin in raw_origins.split(",")]
+
 app = FastAPI()
 
 app.include_router(animes.router, prefix="/v1/animes", tags=["animes"])
