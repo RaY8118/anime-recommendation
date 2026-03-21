@@ -52,6 +52,14 @@ jobs:
           region: ${{ env.REGION }}
           image: ${{ env.IMAGE_TAG }}
           flags: "--allow-unauthenticated --port 8000"
+          env_vars: |
+            ENV=PRODUCTION
+            MONGODB_URI=${{ secrets.MONGODB_URI }}
+            AUTH0_DOMAIN=${{ secrets.AUTH0_DOMAIN }}
+            AUTH0_API_AUDIENCE=${{ secrets.AUTH0_API_AUDIENCE }}
+            GOOGLE_API_KEY=${{ secrets.GEMINI_API_KEY }}
+            OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}
+            ALLOWED_ORIGINS=${{ secrets.ALLOWED_ORIGINS }}
 
       - name: Show Output
         run: echo ${{ steps.deploy.outputs.url }}
