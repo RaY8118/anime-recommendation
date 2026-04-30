@@ -15,9 +15,9 @@ from app.schemas.animes import (
     QueryMode,
 )
 from app.utils.anime_api import get_anime
-from app.utils.chatbot import openrouter_chatbot
 from app.utils.embeddings import generate_embeddings
 from app.utils.fetch_status import get_current_page, update_current_page
+from app.utils.langbot import langchain_chatbot
 from app.utils.validate_params import validate_query_params
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from motor.motor_asyncio import AsyncIOMotorDatabase
@@ -166,7 +166,9 @@ async def get_animes(
         ]
 
     total = await anime_collection.count_documents(mongo_query)
-    cursor = anime_collection.find(mongo_query, ANIME_PROJECTION).skip(skip).limit(per_page)
+    cursor = (
+        anime_collection.find(mongo_query, ANIME_PROJECTION).skip(skip).limit(per_page)
+    )
 
     results = [anime async for anime in cursor]
 
@@ -231,12 +233,16 @@ async def search_anime(query: str, db: AsyncIOMotorDatabase = Depends(get_databa
     cursor = anime_collection.find(
         {
             "$or": [
-                {"title.romaji": {"$regex": f"^{query}", "$options": "i"}}, # Prefix search is faster than general regex
+                {
+                    "title.romaji": {"$regex": f"^{query}", "$options": "i"}
+                },  # Prefix search is faster than general regex
                 {"title.english": {"$regex": f"^{query}", "$options": "i"}},
             ]
         },
-        ANIME_PROJECTION
-    ).limit(20) # Limit search results for performance
+        ANIME_PROJECTION,
+    ).limit(
+        20
+    )  # Limit search results for performance
 
     results = [anime async for anime in cursor]
 
@@ -258,7 +264,7 @@ async def filter_anime_by_genre(
     cursor = (
         anime_collection.find(
             {"genres": {"$elemMatch": {"$regex": f"^{genre}$", "$options": "i"}}},
-            ANIME_PROJECTION
+            ANIME_PROJECTION,
         )
         .skip(skip)
         .limit(limit)
@@ -281,7 +287,12 @@ async def get_random_anime(db: AsyncIOMotorDatabase = Depends(get_database)):
         raise HTTPException(status_code=404, detail="No animes found")
 
     random_index = random.randint(0, count - 1)
-    anime = await anime_collection.find({}, ANIME_PROJECTION).skip(random_index).limit(1).to_list(length=1)
+    anime = (
+        await anime_collection.find({}, ANIME_PROJECTION)
+        .skip(random_index)
+        .limit(1)
+        .to_list(length=1)
+    )
 
     return {"anime": anime[0]}
 
@@ -292,7 +303,11 @@ async def top_rated_anime(
 ):
     validate_query_params(request, {"limit"})
     anime_collection = db.animes
-    cursor = anime_collection.find({}, ANIME_PROJECTION).sort("averageScore", -1).limit(limit)
+    cursor = (
+        anime_collection.find({}, ANIME_PROJECTION)
+        .sort("averageScore", -1)
+        .limit(limit)
+    )
 
     results = [anime async for anime in cursor]
 
@@ -333,7 +348,7 @@ async def get_chatbot_models():
 async def Chatbot(
     request: ChatBotRequest, db: AsyncIOMotorDatabase = Depends(get_database)
 ):
-    results = await openrouter_chatbot(request.message, request.model_id, db)
+    results = await langchain_chatbot(request.message, "openai/gpt-oss-20b:free", db)
     if not results:
         raise HTTPException(status_code=404, detail="No results found")
     return {"results": results}
