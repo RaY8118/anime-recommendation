@@ -69,6 +69,7 @@ async def recommend_anime(
 ):
     validate_query_params(request, {"query", "mode", "top_k"})
     anime_collection = db.animes
+    anime_embeddings_collection = db.embeddings
 
     if mode == QueryMode.anime_name:
         anime = await anime_collection.find_one(
@@ -89,7 +90,7 @@ async def recommend_anime(
     pipeline = [
         {
             "$vectorSearch": {
-                "index": "embeddings_vector_index",
+                "index": "vector_index",
                 "path": "embedding",
                 "queryVector": user_embedding,
                 "numCandidates": 100,
@@ -97,27 +98,18 @@ async def recommend_anime(
             }
         },
         {
-            "$project": {
-                "_id": 0,
-                "id": 1,
-                "title": 1,
-                "description": 1,
-                "averageScore": 1,
-                "genres": 1,
-                "episodes": 1,
-                "duration": 1,
-                "season": 1,
-                "seasonYear": 1,
-                "status": 1,
-                "source": 1,
-                "studios": 1,
-                "coverImage": 1,
-                "score": {"$meta": "vectorSearchScore"},
+            "$lookup": {
+                "from": "animes",
+                "localField": "anime_id",
+                "foreignField": "id",
+                "as": "anime_data",
             }
         },
+        {"$unwind": "$anime_data"},
+        {"$replaceRoot": {"newRoot": "$anime_data"}},
+        {"$project": {"_id": 0}},
     ]
-
-    cursor = anime_collection.aggregate(pipeline)
+    cursor = anime_embeddings_collection.aggregate(pipeline)
     results = [doc async for doc in cursor]
 
     if not results:
