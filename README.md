@@ -9,7 +9,7 @@ NekoRec is a full-stack web application designed to provide personalized anime r
 - 🏷️ **Genre Exploration:** Filter and discover anime by various genres.
 - ❤️ **Personalized Recommendations:** Get anime recommendations based on content similarity (e.g., description, genres).
 - 💡 **Suggest Anime:** Functionality for users to suggest new anime
-- 💬 **AI Chatbot:** Interact with a multi-model AI chatbot for anime recommendations and information. Users can select from various models to customize their experience.
+- 💬 **AI Chatbot:** Interact with a multi-model AI chatbot for anime recommendations and information. Updated utilities for improved language handling.
 
 ## 🛠️ Technologies Used
 
