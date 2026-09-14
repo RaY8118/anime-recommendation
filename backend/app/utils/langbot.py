@@ -1,18 +1,32 @@
 import os
-import numpy as np
-from dotenv import load_dotenv
+
 from langchain_community.chat_message_histories import ChatMessageHistory
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain_mongodb import MongoDBAtlasVectorSearch
+from langchain_mongodb.retrievers import MongoDBAtlasHybridSearchRetriever
+from langchain_openai import OpenAIEmbeddings
 from langchain_openrouter import ChatOpenRouter
-from motor.motor_asyncio import AsyncIOMotorDatabase
+from pymongo import MongoClient
 
-load_dotenv()
+client = MongoClient(os.getenv("MONGODB_URI"))
+db = client["anime_recommendation"]
 
-embedding_model = GoogleGenerativeAIEmbeddings(model="gemini-embedding-001")
-llm = ChatOpenRouter(model="openai/gpt-oss-20b:free")
+llm = ChatOpenRouter(model="openrouter/free")
+
+embedding_model = OpenAIEmbeddings(
+    model="google/gemini-embedding-001",
+    base_url="https://openrouter.ai/api/v1",
+    api_key=os.environ.get("OPENROUTER_API_KEY"),
+    check_embedding_ctx_length=False,
+    extra_body={
+        "provider": {
+            "order": ["Google Vertex"],
+        }
+    },
+)
 
 BASE_RAG_INFO = "Suggest 1-3 animes based EXCLUSIVELY on the provided context data."
 RENDER_HINT = "Use simple Markdown: **bold**, *italic*, and basic bullet lists only. Avoid code blocks, tables, or nested structures that may break rendering."
@@ -40,54 +54,54 @@ def get_history(session_id: str) -> BaseChatMessageHistory:
 
 
 async def langchain_chatbot(
-    message: str, model_id: str, db: AsyncIOMotorDatabase, session_id: str = "default"
+    message: str,
+    model_id: str,
+    session_id: str = "default",
 ):
-    message_embedding = await embedding_model.aembed_query(message)
+    vector_store = MongoDBAtlasVectorSearch(
+        collection=db.embeddings,
+        embedding=embedding_model,
+        index_name="vector_index",
+        text_key="page_content",
+        embedding_key="embedding",
+    )
 
-    if not message_embedding:
-        return "I'm having trouble generating embeddings right now. Please try again."
+    retriever = MongoDBAtlasHybridSearchRetriever(
+        vectorstore=vector_store,
+        search_index_name="search_index",
+        k=5,
+        vector_penalty=60.0,
+        fulltext_penalty=60.0,
+    )
 
-    if isinstance(message_embedding, np.ndarray):
-        message_embedding = message_embedding.tolist()
+    docs = await retriever.ainvoke(message)
 
-    pipeline = [
-        {
-            "$vectorSearch": {
-                "index": "vector_index",
-                "path": "embedding",
-                "queryVector": message_embedding,
-                "numCandidates": 100,
-                "limit": 15,
-            }
-        },
-        {
-            "$project": {
-                "_id": 0,
-                "anime_id": 1,
-                "title_romaji": 1,
-                "score": {"$meta": "vectorSearchScore"},
-            }
-        },
-    ]
-
-    cursor = db.embeddings.aggregate(pipeline)
-    embedding_results = [doc async for doc in cursor]
-
-    if not embedding_results:
+    if not docs:
         return "I couldn't find any matching anime in the database."
 
-    anime_ids = [doc.get("anime_id") for doc in embedding_results if doc.get("anime_id")]
+    formatted_animes = []
+    for doc in docs:
+        metadata = doc.metadata or {}
+        title_info = metadata.get("title", {})
 
-    if not anime_ids:
-        return "I couldn't find any matching anime in the database."
+        title_romaji = title_info.get("display_romaji") or title_info.get(
+            "romaji", "N/A"
+        )
+        title_english = title_info.get("display_english") or title_info.get(
+            "english", "N/A"
+        )
+        genres = ", ".join(metadata.get("genres", []))
+        score = metadata.get("averageScore", "N/A")
+        episodes = metadata.get("episodes", "N/A")
 
-    animes_cursor = db.animes.find({"id": {"$in": anime_ids}})
-    animes = [doc async for doc in animes_cursor]
-
-    if not animes:
-        return "I couldn't find any matching anime in the database."
-
-    formatted_animes = [format_anime_for_llm(anime) for anime in animes]
+        formatted_animes.append(
+            f"--- ANIME SUGGESTION ---\n"
+            f"Title: {title_romaji} ({title_english})\n"
+            f"Overview: {doc.page_content}\n"
+            f"Genres: {genres}\n"
+            f"Episodes: {episodes}\n"
+            f"Score: {score}"
+        )
 
     model_instruction = MODEL_SPECIFIC_INSTRUCTIONS.get(model_id, DEFAULT_PROMPT)
 
@@ -101,9 +115,9 @@ async def langchain_chatbot(
 
     history = get_history(session_id)
 
-    stuff_chain = prompt | llm | StrOutputParser()
+    chain = prompt | llm | StrOutputParser()
 
-    response = await stuff_chain.ainvoke(
+    response = await chain.ainvoke(
         {
             "context": "\n\n".join(formatted_animes),
             "history": history.messages,
@@ -115,21 +129,3 @@ async def langchain_chatbot(
     history.add_ai_message(response)
 
     return response
-
-
-def format_anime_for_llm(anime: dict) -> str:
-    title_romaji = anime.get("title", {}).get("romaji", "N/A")
-    title_english = anime.get("title", {}).get("english", "N/A")
-    description = anime.get("description", "No description provided").strip()
-    genres = ", ".join(anime.get("genres", []))
-    score = anime.get("averageScore", "N/A")
-    episodes = anime.get("episodes", "N/A")
-
-    return (
-        f"--- ANIME SUGGESTION ---\n"
-        f"Title: {title_romaji} ({title_english})\n"
-        f"Description: {description}\n"
-        f"Genre: {genres}\n"
-        f"Episodes: {episodes}\n"
-        f"Score: {score}"
-    )

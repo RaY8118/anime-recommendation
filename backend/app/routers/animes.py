@@ -340,7 +340,7 @@ async def get_chatbot_models():
 async def Chatbot(
     request: ChatBotRequest, db: AsyncIOMotorDatabase = Depends(get_database)
 ):
-    results = await langchain_chatbot(request.message, "openai/gpt-oss-20b:free", db)
+    results = await langchain_chatbot(request.message, request.model_id, db)
     if not results:
         raise HTTPException(status_code=404, detail="No results found")
     return {"results": results}
