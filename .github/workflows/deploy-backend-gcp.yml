@@ -15,6 +15,7 @@ env:
 
 jobs:
   deploy:
+    if: false # Disabled — use deploy-backend.yml instead
     runs-on: ubuntu-latest
 
     permissions:
