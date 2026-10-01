@@ -28,3 +28,6 @@ dist-ssr
 *.sln
 *.sw?
 .code-workspace.code-workspace
+
+# Compiled Go binaries
+backend/go-fetcher/go-fetcher
