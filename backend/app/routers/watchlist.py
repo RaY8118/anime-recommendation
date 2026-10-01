@@ -57,7 +57,7 @@ async def get_watchlist(
     db: AsyncIOMotorDatabase = Depends(get_database),
 ):
     watchlist_collection = db.watchlist
-    anime_collection = db.animes
+    anime_collection = db.new_animes
 
     existing = await watchlist_collection.find_one({"user_id": user_id})
     if not existing:
@@ -108,7 +108,7 @@ async def get_watchlist_item(
     db: AsyncIOMotorDatabase = Depends(get_database),
 ):
     watchlist_collection = db.watchlist
-    anime_collection = db.animes
+    anime_collection = db.new_animes
 
     existing = await watchlist_collection.find_one({"user_id": user_id})
     if not existing:

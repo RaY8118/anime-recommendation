@@ -1,22 +1,31 @@
+import os
 from typing import List, Optional
 
-from google import genai
+from langchain_openai import OpenAIEmbeddings
 
-client = genai.Client()
+embedding_model = OpenAIEmbeddings(
+    model="google/gemini-embedding-001",
+    base_url="https://openrouter.ai/api/v1",
+    api_key=os.environ.get("OPENROUTER_API_KEY"),
+    check_embedding_ctx_length=False,
+    extra_body={
+        "provider": {
+            "order": ["Google Vertex"],
+        }
+    },
+)
 
 
 async def generate_embeddings(text: str) -> Optional[List[float]]:
     try:
-        response = client.models.embed_content(
-            model="gemini-embedding-001", contents=text
-        )
+        embedding = embedding_model.embed_query(text)
 
-        if response.embeddings is not None and len(response.embeddings) > 0:
-            embeddings = response.embeddings[0].values
-            return embeddings
-        else:
-            print("No embeddings found in response.")
-            return None
+        if embedding:
+            return embedding
+
+        print("No embedding returned.")
+        return None
+
     except Exception as e:
         print("Error generating embedding:", e)
         return None

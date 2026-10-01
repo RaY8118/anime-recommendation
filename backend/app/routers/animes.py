@@ -15,6 +15,7 @@ from app.schemas.animes import (
     QueryMode,
 )
 from app.utils.anime_api import get_anime
+from app.utils.anime_embedding_generation import generate_anime_embeddings
 from app.utils.embeddings import generate_embeddings
 from app.utils.fetch_status import get_current_page, update_current_page
 from app.utils.langbot import langchain_chatbot
@@ -68,16 +69,25 @@ async def recommend_anime(
     db: AsyncIOMotorDatabase = Depends(get_database),
 ):
     validate_query_params(request, {"query", "mode", "top_k"})
-    anime_collection = db.animes
+    anime_collection = db.new_animes
     anime_embeddings_collection = db.embeddings
 
     if mode == QueryMode.anime_name:
         anime = await anime_collection.find_one(
             {"$or": [{"title.romaji": query.lower()}, {"title.english": query.lower()}]}
         )
+
         if not anime:
             raise HTTPException(status_code=404, detail="Anime not found")
-        user_embedding = anime.get("embedding")
+
+        embedding_data = await anime_embeddings_collection.find_one(
+            {"anime_id": anime["id"]}
+        )
+
+        if not embedding_data:
+            raise HTTPException(status_code=404, detail="Embedding not found for anime")
+
+        user_embedding = embedding_data["embedding"]
 
     elif mode == QueryMode.genre:
         user_embedding = await generate_embeddings(f"Genres: {query}")
@@ -99,7 +109,7 @@ async def recommend_anime(
         },
         {
             "$lookup": {
-                "from": "animes",
+                "from": "new_animes",
                 "localField": "anime_id",
                 "foreignField": "id",
                 "as": "anime_data",
@@ -131,7 +141,7 @@ async def get_animes(
     db: AsyncIOMotorDatabase = Depends(get_database),
 ):
     skip = (page - 1) * per_page
-    anime_collection = db.animes
+    anime_collection = db.new_animes
 
     mongo_query = {}
 
@@ -190,7 +200,7 @@ async def suggest_anime(
 ):
     if not anime_name:
         raise HTTPException(status_code=400, detail="Anime name is required")
-    anime_collection = db.animes
+    anime_collection = db.new_animes
     suggestions_collection = db.suggestions
 
     existing_anime = await anime_collection.find_one(
@@ -213,14 +223,14 @@ async def suggest_anime(
 
 @router.get("/genres", response_model=GenresResponse)
 async def get_genres(db: AsyncIOMotorDatabase = Depends(get_database)):
-    anime_collection = db.animes
+    anime_collection = db.new_animes
     genres = await anime_collection.distinct("genres")
     return {"genres": genres}
 
 
 @router.get("/search", response_model=AnimeListResponse)
 async def search_anime(query: str, db: AsyncIOMotorDatabase = Depends(get_database)):
-    anime_collection = db.animes
+    anime_collection = db.new_animes
     # Optimization: Use indexed search if available, and projection to limit fields
     cursor = anime_collection.find(
         {
@@ -252,7 +262,7 @@ async def filter_anime_by_genre(
     db: AsyncIOMotorDatabase = Depends(get_database),
 ):
     skip = (page - 1) * limit
-    anime_collection = db.animes
+    anime_collection = db.new_animes
     cursor = (
         anime_collection.find(
             {"genres": {"$elemMatch": {"$regex": f"^{genre}$", "$options": "i"}}},
@@ -272,7 +282,7 @@ async def filter_anime_by_genre(
 
 @router.get("/random", response_model=AnimeResponse)
 async def get_random_anime(db: AsyncIOMotorDatabase = Depends(get_database)):
-    anime_collection = db.animes
+    anime_collection = db.new_animes
     count = await anime_collection.count_documents({})
 
     if count == 0:
@@ -294,7 +304,7 @@ async def top_rated_anime(
     request: Request, limit: int = 10, db: AsyncIOMotorDatabase = Depends(get_database)
 ):
     validate_query_params(request, {"limit"})
-    anime_collection = db.animes
+    anime_collection = db.new_animes
     cursor = (
         anime_collection.find({}, ANIME_PROJECTION)
         .sort("averageScore", -1)
@@ -309,19 +319,19 @@ async def top_rated_anime(
     return {"results": results}
 
 
-@router.get("/{anime_name}", response_model=AnimeResponse)
-async def get_anime_by_name_endpoint(
-    anime_name: str, db: AsyncIOMotorDatabase = Depends(get_database)
+@router.get("/generate-embeddings")
+async def create_embeddings(
+    db: AsyncIOMotorDatabase = Depends(get_database),
 ):
-    anime_collection = db.animes
-    anime = await anime_collection.find_one(
-        {
-            "$or": [
-                {"title.romaji": anime_name.lower()},
-                {"title.english": anime_name.lower()},
-            ]
-        }
-    )
+    await generate_anime_embeddings(db)
+
+    return {"message": "Embedding generation completed"}
+
+
+@router.get("/{id}", response_model=AnimeResponse)
+async def get_anime_by_id(id: int, db: AsyncIOMotorDatabase = Depends(get_database)):
+    anime_collection = db.new_animes
+    anime = await anime_collection.find_one({"id": id})
     if not anime:
         raise HTTPException(status_code=404, detail="Anime not found")
 
