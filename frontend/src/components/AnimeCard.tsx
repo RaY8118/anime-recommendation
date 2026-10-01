@@ -1,7 +1,7 @@
+import { Button } from "@headlessui/react";
+import { TrashIcon } from "@heroicons/react/24/solid";
 import { Link } from "react-router-dom";
 import type { AnimeOut } from "../types/anime";
-import { Button } from '@headlessui/react';
-import { TrashIcon } from '@heroicons/react/24/solid';
 
 export const AnimeCard = ({
   anime,
@@ -27,7 +27,7 @@ export const AnimeCard = ({
       )}
 
       {/* Link only wraps the anime content */}
-      <Link to={`/anime/${anime.title.romaji}`}>
+      <Link to={`/anime/${anime.id}`}>
         <div className="relative overflow-hidden rounded-lg mb-4">
           <img
             src={anime.coverImage?.large}

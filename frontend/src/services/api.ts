@@ -55,10 +55,10 @@ export const getAllAnimes = async (
   return response.data;
 };
 
-export const getAnimeByName = async (
-  name: string
+export const getAnimeById = async (
+  id: number
 ): Promise<AxiosResponse<AnimeResponse>> => {
-  return api.get(`${API_URL}/v1/animes/${name}`);
+  return api.get(`${API_URL}/v1/animes/${id}`);
 };
 
 export const getRecommendations = async (

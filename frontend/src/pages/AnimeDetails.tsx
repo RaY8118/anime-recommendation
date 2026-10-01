@@ -1,28 +1,28 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useParams, useNavigate } from "react-router-dom";
+import { useAuth0 } from "@auth0/auth0-react";
+import { Button, Listbox } from "@headlessui/react";
+import {
+  PencilSquareIcon,
+  PlusIcon,
+  TrashIcon,
+} from "@heroicons/react/24/solid";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { Error as ErrorComponent } from "../components/Error";
 import { Loader } from "../components/Loader";
 import {
-  getAnimeByName,
   addToWatchlist,
-  updateWatchlistStatus,
   deleteFromWatchlist,
+  getAnimeById,
   getWatchlistItem,
+  updateWatchlistStatus,
 } from "../services/api";
-import { AnimeStatus } from "../types/anime";
 import type { AnimeOut } from "../types/anime";
+import { AnimeStatus } from "../types/anime";
 import type { WatchlistAnimeOut } from "../types/watchlist";
-import { useAuth0 } from "@auth0/auth0-react";
-import { useState, useEffect } from "react";
-import { Button, Listbox } from "@headlessui/react";
-import {
-  PlusIcon,
-  PencilSquareIcon,
-  TrashIcon,
-} from "@heroicons/react/24/solid";
 
 const AnimeDetails = () => {
-  const { name } = useParams();
+  const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { isAuthenticated, getAccessTokenSilently } = useAuth0();
@@ -38,14 +38,13 @@ const AnimeDetails = () => {
     isError,
     error,
   } = useQuery({
-    queryKey: ["animeDetails", name],
+    queryKey: ["animeDetails", id],
     queryFn: async () => {
-      if (!name) throw new Error("Anime name is missing");
-      const response = await getAnimeByName(name);
+      if (!id) throw new Error("Anime name is missing");
+      const response = await getAnimeById(Number(id));
       return response.data.anime as AnimeOut;
     },
     staleTime: 1000 * 60 * 5,
-    enabled: !!name,
   });
 
   // --- Fetch single watchlist item (if logged in) ---
@@ -133,7 +132,6 @@ const AnimeDetails = () => {
 
   return (
     <div className="container mx-auto px-4 py-10">
-
       <div className="flex flex-col gap-8 rounded-xl bg-black/20 backdrop-blur-xl border border-white/10 p-8 shadow-xl lg:flex-row">
         {/* Anime Cover Image */}
         <div className="flex-shrink-0 lg:w-1/3">
@@ -169,17 +167,24 @@ const AnimeDetails = () => {
                     </Button>
                   ) : (
                     <>
-                      <Listbox value={userAnimeStatus} onChange={setUserAnimeStatus}>
+                      <Listbox
+                        value={userAnimeStatus}
+                        onChange={setUserAnimeStatus}
+                      >
                         <div className="relative">
                           <Listbox.Button className="inline-flex items-center rounded-md border border-gray-300 bg-card px-2 py-1.5 text-sm/6 text-text shadow-inner shadow-white/10 focus:not-data-focus:outline-none data-focus:outline data-focus:outline-white min-w-max">
-                            {userAnimeStatus.charAt(0).toUpperCase() + userAnimeStatus.slice(1).toLowerCase()}
+                            {userAnimeStatus.charAt(0).toUpperCase() +
+                              userAnimeStatus.slice(1).toLowerCase()}
                           </Listbox.Button>
                           <Listbox.Options className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-card py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm min-w-max">
                             {Object.values(AnimeStatus).map((status) => (
                               <Listbox.Option
                                 key={status}
                                 className={({ active }) =>
-                                  `relative cursor-default select-none py-2 pl-10 pr-4 ${active ? 'bg-primary text-white' : 'text-text'
+                                  `relative cursor-default select-none py-2 pl-10 pr-4 ${
+                                    active
+                                      ? "bg-primary text-white"
+                                      : "text-text"
                                   }`
                                 }
                                 value={status}
@@ -187,16 +192,27 @@ const AnimeDetails = () => {
                                 {({ selected }) => (
                                   <>
                                     <span
-                                      className={`block truncate ${selected ? 'font-medium' : 'font-normal'
-                                        }`}
+                                      className={`block truncate ${
+                                        selected ? "font-medium" : "font-normal"
+                                      }`}
                                     >
-                                      {status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()}
+                                      {status.charAt(0).toUpperCase() +
+                                        status.slice(1).toLowerCase()}
                                     </span>
                                     {selected ? (
                                       <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-primary">
                                         {/* Checkmark icon */}
-                                        <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                          <path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.052-.143z" clipRule="evenodd" />
+                                        <svg
+                                          className="h-5 w-5"
+                                          viewBox="0 0 20 20"
+                                          fill="currentColor"
+                                          aria-hidden="true"
+                                        >
+                                          <path
+                                            fillRule="evenodd"
+                                            d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.052-.143z"
+                                            clipRule="evenodd"
+                                          />
                                         </svg>
                                       </span>
                                     ) : null}
