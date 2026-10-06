@@ -41,8 +41,6 @@ func run() error {
 		return err
 	}
 
-	// Ctrl-C cancels the run so that the current batch finishes cleanly and
-	// the client is disconnected instead of the process dying mid-write.
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 

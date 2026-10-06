@@ -30,4 +30,11 @@ dist-ssr
 .code-workspace.code-workspace
 
 # Compiled Go binaries
+# `go build` names the output after the package directory, so depending on the
+# invocation this is main, fetcher, or go-fetcher.
+backend/go-fetcher/main
+backend/go-fetcher/main.exe
+backend/go-fetcher/fetcher
+backend/go-fetcher/fetcher.exe
 backend/go-fetcher/go-fetcher
+backend/go-fetcher/go-fetcher.exe

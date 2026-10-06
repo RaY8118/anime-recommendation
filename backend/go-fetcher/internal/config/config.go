@@ -14,8 +14,8 @@ import (
 const (
 	DefaultDatabase       = "anime_recommendation"
 	DefaultCollection     = "new_animes"
-	DefaultStartID        = 200
-	DefaultTotalID        = 10000
+	DefaultStartID        = 10100
+	DefaultTotalID        = 15000
 	DefaultBatchSize      = 50
 	DefaultRequestDelay   = 3 * time.Second
 	DefaultRequestTimeout = 30 * time.Second
@@ -115,9 +115,6 @@ func (c *Config) Validate() error {
 	if c.TotalID < c.StartID {
 		return fmt.Errorf("config: ANIME_TOTAL_ID (%d) must be at least ANIME_START_ID (%d)", c.TotalID, c.StartID)
 	}
-	// AniList caps a media page at 50 entries. A larger batch would not be
-	// rejected, it would simply be truncated by the server's default page
-	// size, so fail loudly instead of storing partial data.
 	if c.BatchSize < 1 || c.BatchSize > 50 {
 		return fmt.Errorf("config: ANIME_BATCH_SIZE must be between 1 and 50, got %d", c.BatchSize)
 	}

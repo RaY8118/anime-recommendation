@@ -189,7 +189,7 @@ The fetcher auto-loads `.env` from `./.env`, `../.env`, or `backend/.env`. See `
 
 ## 🧪 Tests
 
-- **Go**: Unit tests in `backend/go-fetcher` cover AniList client (retries/GraphQL errors), BSON contract against Python (`TestBSONTagsMatchPythonContract`), media transform/cleaning, and migrate rehearsal. Run with `go test ./...` and `go vet ./...` from `backend/go-fetcher/`.
+- **Go**: Unit tests in `backend/go-fetcher` cover the ingest loop (range walking, batch clamping, skip-and-continue on failure, cancellation, pacing), config loading and validation, the AniList client (retries/GraphQL errors), the BSON contract against Python (`TestBSONTagsMatchPythonContract`), and media transform/cleaning. Run with `go test ./...` and `go vet ./...` from `backend/go-fetcher/`.
 - **Python/Frontend**: No test suites, configs, or scripts are present in this repo.
 
 ## 🤝 Contributing

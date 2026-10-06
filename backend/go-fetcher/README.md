@@ -9,12 +9,10 @@ The Python service (`backend/app/`) serves the API and generates vector embeddin
 | Path | Responsibility |
 | --- | --- |
 | `cmd/fetcher/` | Entry point: config wiring, .env loading, signal handling, run summary |
-| `cmd/migrate/` | Migration/repair tool (fixes legacy lower-cased BSON keys, cleans HTML, rebuilds indexes) |
 | `internal/anilist/` | GraphQL client, query, retry with exponential backoff |
 | `internal/config/` | Environment configuration and validation |
 | `internal/database/` | MongoDB connection (mongo-driver v2) and idempotent writes |
 | `internal/fetch/` | Walks ID range, drives the ingest loop, records skipped ranges |
-| `internal/migrate/` | Migration logic used by `cmd/migrate` |
 | `internal/models/` | Domain/wire types with explicit BSON tags; BSON contract tests |
 | `internal/transform/` | AniList wire types → domain documents; HTML cleaning and normalization |
 
@@ -51,8 +49,8 @@ All values can be overridden via environment variables. Defaults match the previ
 | `MONGO_DATABASE` | `anime_recommendation` | Shared with Python backend |
 | `MONGO_COLLECTION` | `new_animes` | Metadata collection (Python reads/writes against this) |
 | `ANILIST_ENDPOINT` | `https://graphql.anilist.co` | AniList GraphQL endpoint |
-| `ANIME_START_ID` | `200` | First AniList ID to request |
-| `ANIME_TOTAL_ID` | `10000` | Last AniList ID to request |
+| `ANIME_START_ID` | `10100` | First AniList ID to request |
+| `ANIME_TOTAL_ID` | `15000` | Last AniList ID to request |
 | `ANIME_BATCH_SIZE` | `50` | Max 50 (AniList page cap) |
 | `FETCH_REQUEST_DELAY` | `3s` | Pause between batches |
 | `FETCH_REQUEST_TIMEOUT` | `30s` | Per-request HTTP timeout |
@@ -76,22 +74,38 @@ The Python API and React frontend expect specific field names (e.g. `averageScor
 - Every persisted key has an explicit `bson` tag.
 - `TestBSONTagsMatchPythonContract` (`internal/models/media_bson_test.go`) guards the full key set against the Python contract.
 - Nullable AniList fields are stored as BSON `null` (not `0`/`""`), matching Python `Optional[...]` semantics.
-- `cmd/migrate` can repair legacy documents that used lower-cased keys (`averagescore`, `seasonyear`), strip/clean HTML in description fields, and rebuild indexes (dry-run by default; use `-apply` to commit).
 
-## Migration Tool
+## Indexes
 
-```bash
-cd backend/go-fetcher
-go run ./cmd/migrate        # dry-run
-go run ./cmd/migrate -apply # apply fixes
-# Flags: -skip-dedup, -skip-html, -skip-indexes
-```
+The read path needs three indexes on `new_animes`, all of which are already
+present in the deployed database:
+
+| Index | Purpose |
+| --- | --- |
+| `id_1` (unique) | Guarantees one document per anime id and makes the upsert efficient |
+| `averageScore_-1` | Top-rated sort in `animes.py` |
+| `seasonYear_-1` | Season/year filter |
+
+The unique index is what makes the upsert in `internal/database/mongo.go`
+correct — without it, two concurrent runs could insert the same anime twice.
 
 ## Tests & Quality
 
 ```bash
-go test ./...  # Run all unit tests
-go vet ./...   # Static analysis
+go test ./...            # Unit tests, no database and no network required
+go test -race ./...      # Same, with the race detector
+go vet ./...             # Static analysis
+go test -cover ./...     # Statement coverage per package
 ```
 
-Test files: `internal/anilist/client_test.go`, `internal/models/media_bson_test.go`, `internal/transform/media_test.go`, `internal/migrate/rehearse_test.go`.
+| Test file | Covers |
+| --- | --- |
+| `internal/fetch/fetcher_test.go` | The ingest loop: ID-range walking, batch clamping, skip-and-continue on failed fetch/write, context cancellation, inter-batch pacing, option defaults |
+| `internal/config/config_test.go` | Env parsing, defaults, malformed values, and every `Validate` rule and boundary |
+| `internal/anilist/client_test.go` | GraphQL request shape, batch-size guard, GraphQL error array, retry on 5xx (via `httptest`) |
+| `internal/transform/media_test.go` | HTML cleaning, title normalisation, null vs empty-slice handling |
+| `internal/models/media_bson_test.go` | BSON key set matches the Python contract exactly |
+
+Current statement coverage: `config` 100%, `transform` 92%, `fetch` 88%, `anilist` 88%.
+`internal/database` has no unit tests — `Connect`/`Upsert` are thin wrappers over
+the driver and only meaningful against a real deployment.

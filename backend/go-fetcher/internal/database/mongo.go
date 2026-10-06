@@ -13,9 +13,6 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
-// Connect dials MongoDB and verifies the deployment is reachable before
-// returning. Every failure is reported as an error rather than terminating the
-// process, so the caller decides how to handle it.
 func Connect(ctx context.Context, uri string, timeout time.Duration) (*mongo.Client, error) {
 	if uri == "" {
 		return nil, fmt.Errorf("database: empty MongoDB URI")
@@ -33,7 +30,6 @@ func Connect(ctx context.Context, uri string, timeout time.Duration) (*mongo.Cli
 	}
 
 	if err := ping(connectCtx, client); err != nil {
-		// Release the resources of a client that never became usable.
 		_ = client.Disconnect(context.WithoutCancel(ctx))
 		return nil, err
 	}
