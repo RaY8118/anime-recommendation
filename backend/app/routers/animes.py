@@ -323,9 +323,9 @@ async def top_rated_anime(
 async def create_embeddings(
     db: AsyncIOMotorDatabase = Depends(get_database),
 ):
-    await generate_anime_embeddings(db)
+    result = await generate_anime_embeddings(db)
 
-    return {"message": "Embedding generation completed"}
+    return {"message": "Embedding generation completed", **result}
 
 
 @router.get("/{id}", response_model=AnimeResponse)
