@@ -14,6 +14,11 @@ from app.schemas.animes import (
     MessageResponse,
     QueryMode,
 )
+from app.services.anime_recommendations import (
+    retrieve_by_description,
+    retrieve_by_genre,
+    retrieve_by_name,
+)
 from app.utils.anime_api import get_anime
 from app.utils.anime_embedding_generation import generate_anime_embeddings
 from app.utils.embeddings import generate_embeddings
@@ -69,63 +74,17 @@ async def recommend_anime(
     db: AsyncIOMotorDatabase = Depends(get_database),
 ):
     validate_query_params(request, {"query", "mode", "top_k"})
-    anime_collection = db.new_animes
-    anime_embeddings_collection = db.embeddings
-
     if mode == QueryMode.anime_name:
-        anime = await anime_collection.find_one(
-            {"$or": [{"title.romaji": query.lower()}, {"title.english": query.lower()}]}
-        )
-
-        if not anime:
-            raise HTTPException(status_code=404, detail="Anime not found")
-
-        embedding_data = await anime_embeddings_collection.find_one(
-            {"anime_id": anime["id"]}
-        )
-
-        if not embedding_data:
-            raise HTTPException(status_code=404, detail="Embedding not found for anime")
-
-        user_embedding = embedding_data["embedding"]
-
+        results = await retrieve_by_name(query, db, top_k)
     elif mode == QueryMode.genre:
-        user_embedding = await generate_embeddings(f"Genres: {query}")
+        results = await retrieve_by_genre(query, db, top_k)
     else:
-        user_embedding = await generate_embeddings(query)
-
-    if isinstance(user_embedding, np.ndarray):
-        user_embedding = user_embedding.tolist()
-
-    pipeline = [
-        {
-            "$vectorSearch": {
-                "index": "vector_index",
-                "path": "embedding",
-                "queryVector": user_embedding,
-                "numCandidates": 100,
-                "limit": top_k,
-            }
-        },
-        {
-            "$lookup": {
-                "from": "new_animes",
-                "localField": "anime_id",
-                "foreignField": "id",
-                "as": "anime_data",
-            }
-        },
-        {"$unwind": "$anime_data"},
-        {"$replaceRoot": {"newRoot": "$anime_data"}},
-        {"$project": {"_id": 0}},
-    ]
-    cursor = anime_embeddings_collection.aggregate(pipeline)
-    results = [doc async for doc in cursor]
+        results = await retrieve_by_description(query, db, top_k)
 
     if not results:
         raise HTTPException(status_code=404, detail="No similar animes found")
 
-    return {"results": results}
+    return AnimeListResponse(results=results)
 
 
 @router.get("", response_model=AnimesListResponse)

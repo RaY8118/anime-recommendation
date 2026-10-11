@@ -12,6 +12,7 @@ class AnimeStatus(str, Enum):
     PAUSED = "paused"
     FINISHED = "FINISHED"
     RELEASING = "RELEASING"
+    CANCELLED = "CANCELLED"
 
 
 class Title(BaseModel):
