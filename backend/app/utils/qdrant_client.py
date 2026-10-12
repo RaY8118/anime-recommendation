@@ -1,3 +1,5 @@
+import os
+
 from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
 from langchain_qdrant import QdrantVectorStore
 from qdrant_client import QdrantClient
@@ -6,8 +8,10 @@ from qdrant_client.http.models import Distance, VectorParams
 COLLECTION_NAME = "anime"
 BATCH_SIZE = 200
 VECTOR_SIZE = 512
+QDRANT_CLOUD_API_KEY = os.getenv("QDRANT_CLOUD_API_KEY")
+QDRANT_CLOUD_ENDPOINT = os.getenv("QDRANT_CLOUD_ENDPOINT")
 
-client = QdrantClient(path="./qdrant_data")
+client = QdrantClient(url=QDRANT_CLOUD_ENDPOINT, api_key=QDRANT_CLOUD_API_KEY)
 
 embeddings = FastEmbedEmbeddings(model_name="BAAI/bge-small-zh-v1.5")
 
