@@ -91,12 +91,12 @@ class QueryMode(str, Enum):
 
 
 class ModelID(str, Enum):
-    GEMMA = "google/gemma-4-26b-a4b-it:free"
+    GEMMA = "google/gemini-2.5-flash-lite"
     FREE_MODELS = "openrouter/free"
 
 
 AVAILABLE_MODELS = [
-    {"id": ModelID.GEMMA, "label": "Gemma (Fast)"},
+    {"id": ModelID.GEMMA, "label": "Gemini flash lite"},
     {"id": ModelID.FREE_MODELS, "label": "Free Router"},
 ]
 

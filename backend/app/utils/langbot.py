@@ -1,45 +1,16 @@
-import os
-from operator import itemgetter
 from typing import List
 
-from app.dependencies import get_sync_mongo_client
+from app.services.anime_recommendations import _get_animes_by_ids
+from app.utils.embeddings import embeddings
+from app.utils.qdrant_client import COLLECTION_NAME, client
 from langchain_community.chat_message_histories import ChatMessageHistory
 from langchain_core.chat_history import BaseChatMessageHistory
 from langchain_core.documents import Document
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_core.runnables import RunnablePassthrough
 from langchain_core.runnables.history import RunnableWithMessageHistory
-from langchain_mongodb import MongoDBAtlasVectorSearch
-from langchain_mongodb.retrievers import MongoDBAtlasHybridSearchRetriever
-from langchain_openai import OpenAIEmbeddings
 from langchain_openrouter import ChatOpenRouter
-
-client = get_sync_mongo_client()
-db = client["anime_recommendation"]
-
-embedding_model = OpenAIEmbeddings(
-    model="google/gemini-embedding-001",
-    base_url="https://openrouter.ai/api/v1",
-    api_key=os.environ.get("OPENROUTER_API_KEY"),
-    check_embedding_ctx_length=False,
-)
-
-vector_store = MongoDBAtlasVectorSearch(
-    collection=db.embeddings,
-    embedding=embedding_model,
-    index_name="vector_index",
-    text_key="page_content",
-    embedding_key="embedding",
-)
-
-retriever = MongoDBAtlasHybridSearchRetriever(
-    vectorstore=vector_store,
-    search_index_name="search_index",
-    k=5,
-    vector_penalty=60.0,
-    fulltext_penalty=60.0,
-)
+from motor.motor_asyncio import AsyncIOMotorDatabase
 
 BASE_RAG_INFO = "Suggest 1-3 animes based EXCLUSIVELY on the provided context data."
 RENDER_HINT = "Use simple Markdown: **bold**, *italic*, and basic bullet lists only. Avoid code blocks, tables, or nested structures that may break rendering."
@@ -62,17 +33,28 @@ def format_docs(docs: List[Document]) -> str:
     formatted = []
     for doc in docs:
         meta = doc.metadata or {}
-        title = meta.get("title", {})
-        t_romaji = meta.get("display_romaji", {}) or title.get("romaji", "N/A")
-        t_english = meta.get("display_english", {}) or title.get("english", "N/A")
+        title = meta.get("title", {}) or {}
+        t_romaji = (
+            meta.get("display_romaji")
+            or title.get("romaji")
+            or meta.get("title_romaji")
+            or "N/A"
+        )
+        t_english = (
+            meta.get("display_english")
+            or title.get("english")
+            or meta.get("title_english")
+            or "N/A"
+        )
         genres = ", ".join(meta.get("genres", []))
         score = meta.get("averageScore", "N/A")
         episodes = meta.get("episodes", "N/A")
+        overview = doc.page_content or meta.get("description", "").strip() or "N/A"
 
         formatted.append(
             f"--- ANIME SUGGESTION ---\n"
             f"Title: {t_romaji} ({t_english})\n"
-            f"Overview: {doc.page_content}\n"
+            f"Overview: {overview}\n"
             f"Genres: {genres}\n"
             f"Episodes: {episodes}\n"
             f"Score: {score}"
@@ -90,8 +72,51 @@ def get_history(session_id: str) -> BaseChatMessageHistory:
     return store[session_id]
 
 
+async def retrieve_anime_context(
+    query: str, db: AsyncIOMotorDatabase, top_k: int = 5
+) -> List[Document]:
+    description = (query or "").strip()
+    if not description:
+        return []
+
+    query_embedding = embeddings.embed_query(description)
+
+    results = client.query_points(
+        collection_name=COLLECTION_NAME,
+        query=query_embedding,
+        limit=top_k,
+        with_payload=True,
+        with_vectors=False,
+    )
+
+    points = results.points if hasattr(results, "points") else results
+
+    if not points:
+        return []
+
+    anime_ids = []
+    seen = set()
+    for point in points:
+        payload = getattr(point, "payload", None) or {}
+        metadata = payload.get("metadata") or {}
+        aid = metadata.get("anime_id") or getattr(point, "id", None)
+        if aid is not None and aid not in seen:
+            seen.add(aid)
+            anime_ids.append(aid)
+
+    animes = await _get_animes_by_ids(db, anime_ids[:top_k])
+
+    return [
+        Document(
+            page_content=(anime.get("description") or "").strip(),
+            metadata=anime,
+        )
+        for anime in animes
+    ]
+
+
 async def langchain_chatbot(
-    message: str, model_id: str, session_id: str = "default"
+    message: str, model_id: str, db: AsyncIOMotorDatabase, session_id: str = "default"
 ) -> str:
     instruction = MODEL_SPECIFIC_INSTRUCTIONS.get(model_id, DEFAULT_PROMPT)
 
@@ -104,14 +129,10 @@ async def langchain_chatbot(
             ("human", "{question}"),
         ]
     )
-    context_pipeline = itemgetter("question") | retriever | format_docs
+    docs = await retrieve_anime_context(message, db)
+    context = format_docs(docs)
 
-    rag_chain = (
-        RunnablePassthrough.assign(context=context_pipeline)
-        | prompt
-        | llm
-        | StrOutputParser()
-    )
+    rag_chain = prompt | llm | StrOutputParser()
 
     chain_with_history = RunnableWithMessageHistory(
         rag_chain,
@@ -121,6 +142,7 @@ async def langchain_chatbot(
     )
 
     response = await chain_with_history.ainvoke(
-        {"question": message}, config={"configurable": {"session_id": session_id}}
+        {"question": message, "context": context},
+        config={"configurable": {"session_id": session_id}},
     )
     return response
