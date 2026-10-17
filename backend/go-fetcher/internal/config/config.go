@@ -14,8 +14,8 @@ import (
 const (
 	DefaultDatabase       = "anime_recommendation"
 	DefaultCollection     = "new_animes"
-	DefaultStartID        = 10100
-	DefaultTotalID        = 15000
+	DefaultStartID        = 250000
+	DefaultTotalID        = 300000
 	DefaultBatchSize      = 50
 	DefaultRequestDelay   = 3 * time.Second
 	DefaultRequestTimeout = 30 * time.Second

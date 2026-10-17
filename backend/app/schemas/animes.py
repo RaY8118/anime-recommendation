@@ -13,6 +13,7 @@ class AnimeStatus(str, Enum):
     FINISHED = "FINISHED"
     RELEASING = "RELEASING"
     CANCELLED = "CANCELLED"
+    NOT_YET_RELEASED = "NOT_YET_RELEASED"
 
 
 class Title(BaseModel):

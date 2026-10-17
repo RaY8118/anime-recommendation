@@ -1,8 +1,7 @@
 from typing import Any
 
-from langchain_core.documents import Document
-
 from app.utils.qdrant_client import BATCH_SIZE, vector_db
+from langchain_core.documents import Document
 
 
 def anime_to_document(anime: dict[str, Any]) -> Document:
@@ -33,12 +32,40 @@ def anime_to_document(anime: dict[str, Any]) -> Document:
 
 async def generate_anime_embeddings(db):
     collection = db.new_animes
-    cursor = collection.find({})
+    cursor = collection.find({}, batch_size=200)
+    collection_name = vector_db.collection_name
 
     batch: list[Document] = []
     batch_ids: list[int] = []
     processed = 0
     failed = 0
+    skipped = 0
+
+    existing_ids = set()
+    offset = None
+
+    try:
+        while True:
+            points, next_offset = vector_db.client.scroll(
+                collection_name=collection_name,
+                limit=1000,
+                offset=offset,
+                with_payload=False,
+                with_vectors=False,
+            )
+
+            for point in points:
+                existing_ids.add(int(point.id))
+
+            if next_offset is None:
+                break
+
+            offset = next_offset
+
+        print(f"Found {len(existing_ids)} existing anime in Qdrant")
+
+    except Exception as exc:
+        raise RuntimeError(f"Could not retrieve existing Qdrant IDs: {exc}") from exc
 
     async def flush_batch():
         nonlocal processed, failed, batch, batch_ids
@@ -52,7 +79,9 @@ async def generate_anime_embeddings(db):
                 ids=batch_ids,
             )
             processed += len(batch)
-            print(f"Stored {processed} anime so far")
+            existing_ids.update(batch_ids)
+
+            print(f"Stored: {processed}, " f"Skipped: {skipped}, Failed: {failed}")
 
         except Exception as exc:
             print(f"Batch failed: {exc}")
@@ -64,6 +93,8 @@ async def generate_anime_embeddings(db):
                         ids=[anime_id],
                     )
                     processed += 1
+                    existing_ids.add(anime_id)
+
                 except Exception as item_exc:
                     failed += 1
                     print(f"Failed anime {anime_id}: {item_exc}")
@@ -74,8 +105,13 @@ async def generate_anime_embeddings(db):
 
     async for anime in cursor:
         try:
-            document = anime_to_document(anime)
             anime_id = int(anime["id"])
+
+            if anime_id in existing_ids:
+                skipped += 1
+                continue
+
+            document = anime_to_document(anime)
 
             batch.append(document)
             batch_ids.append(anime_id)
@@ -89,5 +125,10 @@ async def generate_anime_embeddings(db):
 
     await flush_batch()
 
-    print(f"Finished. Stored: {processed}, Failed: {failed}")
-    return {"processed": processed, "failed": failed}
+    print(f"Finished. Stored: {processed}, " f"Skipped: {skipped}, Failed: {failed}")
+
+    return {
+        "processed": processed,
+        "failed": failed,
+        "skipped": skipped,
+    }
