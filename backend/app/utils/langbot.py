@@ -8,7 +8,7 @@ from app.utils.qdrant_client import COLLECTION_NAME, client
 from dotenv import load_dotenv
 from langchain_community.chat_message_histories import RedisChatMessageHistory
 from langchain_core.documents import Document
-from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables.history import RunnableWithMessageHistory
@@ -26,6 +26,9 @@ HISTORY_SIZE = 20
 RETRIEVAL_TOP_K = 8
 RETRIEVAL_CANDIDATES = 20
 LLM_TIMEOUT_SECONDS = 60
+STREAM_TIMEOUT_SECONDS = 120
+EXTRACTION_TIMEOUT_SECONDS = 15
+RETRIEVAL_TIMEOUT_SECONDS = 25
 
 BASE_RAG_INFO = "Suggest 1-3 animes based EXCLUSIVELY on the provided context data."
 RENDER_HINT = "Use simple Markdown: **bold**, *italic*, and basic bullet lists only. Avoid code blocks, tables, or nested structures that may break rendering."
@@ -167,6 +170,25 @@ def format_docs(docs: List[Document]) -> str:
     return "\n\n".join(formatted)
 
 
+def anime_card(meta: dict) -> dict:
+    title = meta.get("title") or {}
+    return {
+        "id": meta.get("id") or meta.get("anime_id"),
+        "title": (
+            meta.get("display_english")
+            or title.get("english")
+            or meta.get("display_romaji")
+            or title.get("romaji")
+            or meta.get("title_romaji")
+            or "N/A"
+        ),
+        "cover": (meta.get("coverImage") or {}).get("large"),
+        "score": meta.get("averageScore"),
+        "year": meta.get("seasonYear"),
+        "genres": (meta.get("genres") or [])[:3],
+    }
+
+
 async def extract_query(
     message: str, history: List[BaseMessage], model_id: str
 ) -> AnimeQuery:
@@ -176,7 +198,9 @@ async def extract_query(
         messages.extend(history[-6:])
         messages.append(HumanMessage(content=message))
 
-        result = await llm.ainvoke(messages)
+        result = await asyncio.wait_for(
+            llm.ainvoke(messages), timeout=EXTRACTION_TIMEOUT_SECONDS
+        )
         if isinstance(result, dict):
             result = AnimeQuery(**result)
         if not isinstance(result, AnimeQuery):
@@ -321,6 +345,19 @@ async def retrieve_anime_context(
     ]
 
 
+async def safe_retrieve_anime_context(
+    query: str, db: AsyncIOMotorDatabase, filters: Optional[Filter] = None
+) -> List[Document]:
+    try:
+        return await asyncio.wait_for(
+            retrieve_anime_context(query, db, filters),
+            timeout=RETRIEVAL_TIMEOUT_SECONDS,
+        )
+    except Exception as exc:
+        print(f"Retrieval timed out or failed: {exc}")
+        return []
+
+
 async def langchain_chatbot(
     message: str, model_id: str, db: AsyncIOMotorDatabase, session_id: str = "default"
 ) -> str:
@@ -335,7 +372,9 @@ async def langchain_chatbot(
 
     anime_query = await extract_query(message, history_messages, model_id)
     qdrant_filter = build_qdrant_filter(anime_query)
-    docs = await retrieve_anime_context(anime_query.query or message, db, qdrant_filter)
+    docs = await safe_retrieve_anime_context(
+        anime_query.query or message, db, qdrant_filter
+    )
     context = format_docs(docs)
 
     llm = ChatOpenRouter(model=model_id)
@@ -370,3 +409,82 @@ async def langchain_chatbot(
         return "I'm having trouble connecting to my brain right now!"
 
     return response
+
+
+async def stream_chatbot(
+    message: str, model_id: str, db: AsyncIOMotorDatabase, session_id: str = "default"
+):
+    instruction = MODEL_SPECIFIC_INSTRUCTIONS.get(model_id, DEFAULT_PROMPT)
+
+    try:
+        history = await asyncio.to_thread(_get_history, session_id)
+        history_messages = await asyncio.to_thread(lambda: history.messages)
+    except Exception as exc:
+        print(f"Loading chat history failed: {exc}")
+        history = None
+        history_messages = []
+
+    yield ("status", {"stage": "thinking"})
+
+    anime_query = await extract_query(message, history_messages, model_id)
+    qdrant_filter = build_qdrant_filter(anime_query)
+
+    yield ("status", {"stage": "searching"})
+
+    docs = await safe_retrieve_anime_context(
+        anime_query.query or message, db, qdrant_filter
+    )
+    context = format_docs(docs)
+
+    if docs:
+        yield ("sources", {"anime": [anime_card(doc.metadata or {}) for doc in docs]})
+
+    llm = ChatOpenRouter(model=model_id)
+
+    prompt = ChatPromptTemplate.from_messages(
+        [
+            ("system", f"{instruction}\n\nContext:\n{{context}}"),
+            MessagesPlaceholder(variable_name="history"),
+            ("human", "{question}"),
+        ]
+    )
+
+    chain = prompt | llm | StrOutputParser()
+
+    stream = chain.astream(
+        {"question": message, "context": context, "history": history_messages}
+    ).__aiter__()
+
+    chunks: List[str] = []
+    try:
+        while True:
+            try:
+                chunk = await asyncio.wait_for(
+                    stream.__anext__(), timeout=STREAM_TIMEOUT_SECONDS
+                )
+            except StopAsyncIteration:
+                break
+
+            if chunk:
+                chunks.append(chunk)
+                yield ("token", {"text": chunk})
+    except Exception as exc:
+        print(f"Streaming failed: {exc}")
+        yield (
+            "error",
+            {"message": "I'm having trouble connecting to my brain right now!"},
+        )
+        return
+
+    answer = "".join(chunks)
+
+    if history is not None and answer:
+        try:
+            await asyncio.to_thread(
+                history.add_messages,
+                [HumanMessage(content=message), AIMessage(content=answer)],
+            )
+        except Exception as exc:
+            print(f"Saving chat history failed: {exc}")
+
+    yield ("done", {"text": answer})

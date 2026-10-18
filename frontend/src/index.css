@@ -119,3 +119,63 @@ html.dark {
     background-position: 0% 50%;
   }
 }
+
+/* Chatbot markdown styling */
+.chat-prose {
+  line-height: 1.55;
+  word-break: break-word;
+}
+
+.chat-prose p {
+  margin: 0 0 0.5rem;
+}
+
+.chat-prose p:last-child {
+  margin-bottom: 0;
+}
+
+.chat-prose ul,
+.chat-prose ol {
+  margin: 0.25rem 0 0.5rem 1.15rem;
+  padding: 0;
+}
+
+.chat-prose ul {
+  list-style: disc;
+}
+
+.chat-prose ol {
+  list-style: decimal;
+}
+
+.chat-prose li {
+  margin: 0.15rem 0;
+}
+
+.chat-prose strong {
+  font-weight: 600;
+}
+
+.chat-prose a {
+  color: var(--color-accent);
+  text-decoration: underline;
+}
+
+.chat-prose code {
+  background: rgba(0, 0, 0, 0.08);
+  padding: 0.1rem 0.3rem;
+  border-radius: 4px;
+  font-size: 0.85em;
+}
+
+html.dark .chat-prose code {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.chat-prose h1,
+.chat-prose h2,
+.chat-prose h3 {
+  font-size: 1rem;
+  margin: 0.5rem 0 0.25rem;
+}
+

@@ -1,3 +1,4 @@
+import json
 import random
 from typing import Optional
 
@@ -24,9 +25,10 @@ from app.utils.anime_api import get_anime
 from app.utils.anime_embedding_generation import generate_anime_embeddings
 from app.utils.embeddings import generate_embeddings
 from app.utils.fetch_status import get_current_page, update_current_page
-from app.utils.langbot import clear_chat_history, langchain_chatbot
+from app.utils.langbot import clear_chat_history, langchain_chatbot, stream_chatbot
 from app.utils.validate_params import validate_query_params
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi.responses import StreamingResponse
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 router = APIRouter()
@@ -326,6 +328,37 @@ async def Chatbot(
     if not results:
         raise HTTPException(status_code=404, detail="No results found")
     return {"results": results}
+
+
+@router.post("/chatbot/stream")
+async def StreamChatbot(
+    request: ChatBotRequest, db: AsyncIOMotorDatabase = Depends(get_database)
+):
+    async def event_generator():
+        try:
+            async for event, data in stream_chatbot(
+                request.message,
+                request.model_id,
+                db,
+                session_id=request.session_id or "default",
+            ):
+                yield f"event: {event}\ndata: {json.dumps(data)}\n\n"
+        except Exception as exc:
+            print(f"Streaming chatbot failed: {exc}")
+            yield (
+                "event: error\n"
+                f"data: {json.dumps({'message': 'Something went wrong. Please try again.'})}\n\n"
+            )
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 @router.post("/chatbot/clear", response_model=MessageResponse)

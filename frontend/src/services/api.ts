@@ -4,6 +4,7 @@ import type {
   AnimeListResponse,
   AnimeResponse,
   AnimesListResponse,
+  ChatAnime,
   ChatbotResponse,
   GenresResponse,
   MessageResponse,
@@ -149,6 +150,92 @@ export const clearChatHistory = async (
   return api.post(`${API_URL}/v1/animes/chatbot/clear`, {
     session_id,
   });
+};
+
+export type StreamHandlers = {
+  onStatus?: (stage: string) => void;
+  onToken?: (text: string) => void;
+  onSources?: (anime: ChatAnime[]) => void;
+  onDone?: (fullText: string) => void;
+  onError?: (message: string) => void;
+  signal?: AbortSignal;
+};
+
+const parseSseEvent = (rawEvent: string, handlers: StreamHandlers) => {
+  let event = "message";
+  const dataLines: string[] = [];
+
+  for (const line of rawEvent.split("\n")) {
+    if (line.startsWith("event:")) {
+      event = line.slice(6).trim();
+    } else if (line.startsWith("data:")) {
+      dataLines.push(line.slice(5).trim());
+    }
+  }
+
+  if (dataLines.length === 0) return;
+
+  let data: Record<string, unknown>;
+  try {
+    data = JSON.parse(dataLines.join("\n"));
+  } catch {
+    return;
+  }
+
+  switch (event) {
+    case "status":
+      handlers.onStatus?.(data.stage as string);
+      break;
+    case "token":
+      handlers.onToken?.(data.text as string);
+      break;
+    case "sources":
+      handlers.onSources?.((data.anime as ChatAnime[]) ?? []);
+      break;
+    case "done":
+      handlers.onDone?.((data.text as string) ?? "");
+      break;
+    case "error":
+      handlers.onError?.((data.message as string) ?? "Something went wrong.");
+      break;
+  }
+};
+
+export const streamChatMessage = async (
+  message: string,
+  model_id: string,
+  session_id: string,
+  handlers: StreamHandlers
+): Promise<void> => {
+  const response = await fetch(`${API_URL}/v1/animes/chatbot/stream`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message, model_id, session_id }),
+    signal: handlers.signal,
+  });
+
+  if (!response.ok || !response.body) {
+    throw new Error(`Chat stream failed with status ${response.status}`);
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+
+    let boundary = buffer.indexOf("\n\n");
+    while (boundary !== -1) {
+      const rawEvent = buffer.slice(0, boundary);
+      buffer = buffer.slice(boundary + 2);
+      parseSseEvent(rawEvent, handlers);
+      boundary = buffer.indexOf("\n\n");
+    }
+  }
 };
 
 export const getWatchlist = async (

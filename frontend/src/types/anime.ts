@@ -73,6 +73,15 @@ export type ChatbotResponse = {
   results: string;
 };
 
+export type ChatAnime = {
+  id?: number;
+  title: string;
+  cover?: string;
+  score?: number;
+  year?: number;
+  genres: Array<string>;
+};
+
 export enum QueryMode {
   anime_name = "anime_name",
   genre = "genre",
