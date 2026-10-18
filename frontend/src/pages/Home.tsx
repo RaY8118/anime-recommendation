@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import { AnimeCard } from "../components/AnimeCard";
 import { Error } from "../components/Error";
 import GenreHighlights from "../components/GenreHighlights";
@@ -41,9 +42,33 @@ const Home = () => {
 
   return (
     <div className="container mx-auto px-4 py-10">
-      <h1 className="mb-10 text-center text-5xl font-extrabold gradient-text">
-        Welcome to NekoRec
-      </h1>
+      <section className="mb-16 text-center animate-fade-up">
+        <span className="inline-flex items-center gap-2 rounded-full glass px-4 py-1.5 text-xs font-medium uppercase tracking-[0.2em] text-text-light">
+          <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+          Anime Recommender
+        </span>
+        <h1 className="mt-6 text-5xl font-extrabold gradient-text md:text-6xl">
+          Welcome to NekoRec
+        </h1>
+        <p className="mx-auto mt-4 max-w-2xl text-lg text-text-light">
+          Discover your next favorite anime — browse a curated library, get
+          AI-powered recommendations, and chat with our cat-eared concierge.
+        </p>
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+          <Link
+            to="/browse"
+            className="rounded-full bg-gradient-to-r from-primary to-accent px-6 py-3 font-semibold text-white shadow-md shadow-primary/30 transition-all duration-300 hover:brightness-110"
+          >
+            Browse Anime
+          </Link>
+          <Link
+            to="/recommendations"
+            className="rounded-full glass px-6 py-3 font-semibold text-text transition-all duration-300 hover:border-primary hover:text-primary"
+          >
+            Get Recommendations
+          </Link>
+        </div>
+      </section>
 
       <section className="mb-16">
         <h2 className="mb-8 text-center text-4xl font-bold gradient-text">

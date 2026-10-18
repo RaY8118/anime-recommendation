@@ -1,5 +1,10 @@
 import { Button } from "@headlessui/react";
 import { TrashIcon } from "@heroicons/react/24/solid";
+import {
+  CalendarDaysIcon,
+  FilmIcon,
+  SignalIcon,
+} from "@heroicons/react/24/outline";
 import { Link } from "react-router-dom";
 import type { AnimeOut } from "../types/anime";
 
@@ -49,6 +54,29 @@ export const AnimeCard = ({
         <p className="text-sm text-text-light leading-relaxed">
           {anime.description?.slice(0, 120)}...
         </p>
+
+        {(anime.seasonYear || anime.episodes || anime.status) && (
+          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-text-light">
+            {anime.seasonYear ? (
+              <span className="flex items-center gap-1.5">
+                <CalendarDaysIcon className="h-3.5 w-3.5" />
+                {anime.seasonYear}
+              </span>
+            ) : null}
+            {anime.episodes ? (
+              <span className="flex items-center gap-1.5">
+                <FilmIcon className="h-3.5 w-3.5" />
+                {anime.episodes} ep
+              </span>
+            ) : null}
+            {anime.status ? (
+              <span className="flex items-center gap-1.5 capitalize">
+                <SignalIcon className="h-3.5 w-3.5" />
+                {anime.status.toLowerCase()}
+              </span>
+            ) : null}
+          </div>
+        )}
       </Link>
     </div>
   );

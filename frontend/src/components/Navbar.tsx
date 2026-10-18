@@ -3,8 +3,36 @@ import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 import ThemeToggle from "./ThemeToggle";
-import { useAuth0 } from "@auth0/auth0-react";
-import { Button } from '@headlessui/react';
+import { useAuth0, type User } from "@auth0/auth0-react";
+import { Button, Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
+import {
+  ArrowRightOnRectangleIcon,
+  BookmarkIcon,
+  ChevronDownIcon,
+  SparklesIcon,
+} from "@heroicons/react/24/outline";
+
+const UserAvatar = ({
+  user,
+  size = "h-8 w-8",
+}: {
+  user: User | undefined;
+  size?: string;
+}) =>
+  user?.picture ? (
+    <img
+      src={user.picture}
+      alt={user.nickname ?? "User"}
+      referrerPolicy="no-referrer"
+      className={`${size} rounded-full object-cover`}
+    />
+  ) : (
+    <span
+      className={`${size} flex items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent text-sm font-bold text-white`}
+    >
+      {(user?.nickname ?? user?.name ?? "U").charAt(0).toUpperCase()}
+    </span>
+  );
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -139,21 +167,79 @@ const Navbar = () => {
                     Login
                   </button>
                 ) : (
-                  <>
-                    <span className="mr-4 text-text-light">
-                      Hello, {user?.nickname}
-                    </span>
-                    <Button
-                      onClick={() =>
-                        logout({
-                          logoutParams: { returnTo: window.location.origin },
-                        })
-                      }
-                      className="inline-flex items-center gap-2 rounded-full bg-red-500/90 px-4 py-1.5 text-sm font-semibold text-white shadow-inner shadow-white/10 transition-colors data-hover:bg-red-500 focus:outline-none"
+                  <Menu as="div" className="relative">
+                    <MenuButton className="flex items-center gap-1.5 rounded-full border border-border bg-surface p-1 pr-2 text-text transition-colors hover:border-primary focus:outline-none">
+                      <UserAvatar user={user} />
+                      <ChevronDownIcon className="h-4 w-4 text-text-light" />
+                    </MenuButton>
+                    <MenuItems
+                      transition
+                      anchor="bottom end"
+                      className="z-[60] w-56 rounded-2xl glass p-2 shadow-2xl shadow-primary/20 focus:outline-none transition duration-150 ease-out data-[closed]:translate-y-1 data-[closed]:opacity-0"
                     >
-                      Logout
-                    </Button>
-                  </>
+                        <div className="mb-1 border-b border-border px-3 py-2">
+                          <p className="truncate text-sm font-semibold text-text">
+                            {user?.name ?? user?.nickname}
+                          </p>
+                          {user?.email && (
+                            <p className="truncate text-xs text-text-light">
+                              {user.email}
+                            </p>
+                          )}
+                        </div>
+                        <MenuItem>
+                          {({ focus }) => (
+                            <Link
+                              to="/watchlist"
+                              className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${
+                                focus
+                                  ? "bg-primary/10 text-primary"
+                                  : "text-text-light"
+                              }`}
+                            >
+                              <BookmarkIcon className="h-4 w-4" />
+                              My Watchlist
+                            </Link>
+                          )}
+                        </MenuItem>
+                        <MenuItem>
+                          {({ focus }) => (
+                            <Link
+                              to="/recommendations"
+                              className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${
+                                focus
+                                  ? "bg-primary/10 text-primary"
+                                  : "text-text-light"
+                              }`}
+                            >
+                              <SparklesIcon className="h-4 w-4" />
+                              Recommendations
+                            </Link>
+                          )}
+                        </MenuItem>
+                        <MenuItem>
+                          {({ focus }) => (
+                            <button
+                              onClick={() =>
+                                logout({
+                                  logoutParams: {
+                                    returnTo: window.location.origin,
+                                  },
+                                })
+                              }
+                              className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
+                                focus
+                                  ? "bg-red-500/10 text-red-500"
+                                  : "text-text-light"
+                              }`}
+                            >
+                              <ArrowRightOnRectangleIcon className="h-4 w-4" />
+                              Log out
+                            </button>
+                          )}
+                        </MenuItem>
+                    </MenuItems>
+                  </Menu>
                 )}
                 <ThemeToggle />
               </div>
@@ -269,9 +355,19 @@ const Navbar = () => {
                   </button>
                 ) : (
                   <>
-                    <span className="text-text-light">
-                      Hello, {user?.nickname}
-                    </span>
+                    <div className="flex w-full items-center gap-3 rounded-xl border border-border bg-surface px-3 py-2">
+                      <UserAvatar user={user} size="h-10 w-10" />
+                      <div className="min-w-0 text-left">
+                        <p className="truncate text-sm font-semibold text-text">
+                          {user?.name ?? user?.nickname}
+                        </p>
+                        {user?.email && (
+                          <p className="truncate text-xs text-text-light">
+                            {user.email}
+                          </p>
+                        )}
+                      </div>
+                    </div>
                     <Button
                       onClick={() => {
                         logout({
@@ -281,6 +377,7 @@ const Navbar = () => {
                       }}
                       className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-red-500/90 px-4 py-1.5 text-sm font-semibold text-white shadow-inner shadow-white/10 transition-colors data-hover:bg-red-500 focus:outline-none"
                     >
+                      <ArrowRightOnRectangleIcon className="h-4 w-4" />
                       Logout
                     </Button>
                   </>

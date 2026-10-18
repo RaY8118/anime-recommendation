@@ -5,6 +5,16 @@ import {
   PlusIcon,
   TrashIcon,
 } from "@heroicons/react/24/solid";
+import {
+  BuildingOffice2Icon,
+  CalendarDaysIcon,
+  ClockIcon,
+  DocumentTextIcon,
+  FilmIcon,
+  SignalIcon,
+  TagIcon,
+} from "@heroicons/react/24/outline";
+import type { ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -20,6 +30,71 @@ import {
 import type { AnimeOut } from "../types/anime";
 import { AnimeStatus } from "../types/anime";
 import type { WatchlistAnimeOut } from "../types/watchlist";
+
+const ScoreRing = ({ score }: { score: number }) => {
+  const pct = Math.max(0, Math.min(100, score));
+  const radius = 34;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference * (1 - pct / 100);
+
+  return (
+    <div className="relative h-24 w-24 shrink-0">
+      <svg viewBox="0 0 80 80" className="h-full w-full -rotate-90">
+        <defs>
+          <linearGradient id="scoreGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="var(--color-primary)" />
+            <stop offset="100%" stopColor="var(--color-accent)" />
+          </linearGradient>
+        </defs>
+        <circle
+          cx="40"
+          cy="40"
+          r={radius}
+          fill="none"
+          strokeWidth="7"
+          style={{ stroke: "var(--color-border)" }}
+        />
+        <circle
+          cx="40"
+          cy="40"
+          r={radius}
+          fill="none"
+          stroke="url(#scoreGrad)"
+          strokeWidth="7"
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-2xl font-bold text-text">{score}</span>
+        <span className="text-[10px] uppercase tracking-wide text-text-light">
+          score
+        </span>
+      </div>
+    </div>
+  );
+};
+
+const StatCard = ({
+  icon,
+  label,
+  value,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: string;
+}) => (
+  <div className="flex items-start gap-3 rounded-xl glass p-4">
+    <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary">
+      {icon}
+    </span>
+    <div className="min-w-0">
+      <p className="text-xs uppercase tracking-wide text-text-light">{label}</p>
+      <p className="text-sm text-text">{value}</p>
+    </div>
+  </div>
+);
 
 const AnimeDetails = () => {
   const { id } = useParams();
@@ -132,7 +207,21 @@ const AnimeDetails = () => {
 
   return (
     <div className="container mx-auto px-4 py-10">
-      <div className="flex flex-col gap-8 rounded-2xl glass p-8 shadow-xl lg:flex-row">
+      <div className="relative">
+        {/* Blurred cover backdrop */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl"
+        >
+          <img
+            src={anime.coverImage?.large}
+            alt=""
+            className="h-full w-full scale-110 object-cover opacity-25 blur-3xl saturate-150"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-background/60 to-background" />
+        </div>
+
+        <div className="relative z-10 flex flex-col gap-8 rounded-2xl glass p-8 shadow-xl lg:flex-row">
         {/* Anime Cover Image */}
         <div className="flex-shrink-0 lg:w-1/3">
           <img
@@ -260,58 +349,54 @@ const AnimeDetails = () => {
             {anime.description}
           </p>
 
-          {/* Details Grid */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="detail-item">
-              <strong className="text-secondary">Genres:</strong>{" "}
-              <span className="text-text-light">{anime.genres.join(", ")}</span>
-            </div>
-            <div className="detail-item">
-              <strong className="text-secondary">Average Score:</strong>{" "}
-              <span className="text-text-light">
-                {anime.averageScore ? `${anime.averageScore}%` : "N/A"}
-              </span>
-            </div>
-            <div className="detail-item">
-              <strong className="text-secondary">Episodes:</strong>{" "}
-              <span className="text-text-light">
-                {anime.episodes ? `${anime.episodes}` : "N/A"}
-              </span>
-            </div>
-            <div className="detail-item">
-              <strong className="text-secondary">Duration:</strong>{" "}
-              <span className="text-text-light">
-                {anime.duration ? `${anime.duration} minutes` : "N/A"}
-              </span>
-            </div>
-            <div className="detail-item">
-              <strong className="text-secondary">Season:</strong>{" "}
-              <span className="text-text-light">
-                {anime.season ? `${anime.season}` : "N/A"} (
-                {anime.seasonYear ? `${anime.seasonYear}` : "N/A"})
-              </span>
-            </div>
-            <div className="detail-item">
-              <strong className="text-secondary">Status:</strong>{" "}
-              <span className="text-text-light">
-                {anime.status ? `${anime.status}` : "N/A"}
-              </span>
-            </div>
-            <div className="detail-item">
-              <strong className="text-secondary">Source:</strong>{" "}
-              <span className="text-text-light">
-                {anime.source ? `${anime.source}` : "N/A"}
-              </span>
-            </div>
-            <div className="detail-item">
-              <strong className="text-secondary">Studios:</strong>{" "}
-              <span className="text-text-light">
-                {anime.studios && anime.studios.length > 0
-                  ? anime.studios.join(", ")
-                  : "N/A"}
-              </span>
+          {/* Score + Details */}
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
+            {anime.averageScore ? (
+              <ScoreRing score={anime.averageScore} />
+            ) : null}
+            <div className="grid flex-1 grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <StatCard
+                icon={<TagIcon className="h-5 w-5" />}
+                label="Genres"
+                value={anime.genres.length ? anime.genres.join(", ") : "N/A"}
+              />
+              <StatCard
+                icon={<FilmIcon className="h-5 w-5" />}
+                label="Episodes"
+                value={anime.episodes ? `${anime.episodes}` : "N/A"}
+              />
+              <StatCard
+                icon={<ClockIcon className="h-5 w-5" />}
+                label="Duration"
+                value={anime.duration ? `${anime.duration} min` : "N/A"}
+              />
+              <StatCard
+                icon={<CalendarDaysIcon className="h-5 w-5" />}
+                label="Season"
+                value={`${anime.season ?? "N/A"} (${anime.seasonYear ?? "N/A"})`}
+              />
+              <StatCard
+                icon={<SignalIcon className="h-5 w-5" />}
+                label="Status"
+                value={anime.status ?? "N/A"}
+              />
+              <StatCard
+                icon={<DocumentTextIcon className="h-5 w-5" />}
+                label="Source"
+                value={anime.source ?? "N/A"}
+              />
+              <StatCard
+                icon={<BuildingOffice2Icon className="h-5 w-5" />}
+                label="Studios"
+                value={
+                  anime.studios && anime.studios.length > 0
+                    ? anime.studios.join(", ")
+                    : "N/A"
+                }
+              />
             </div>
           </div>
+        </div>
         </div>
       </div>
     </div>

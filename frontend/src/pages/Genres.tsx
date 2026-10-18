@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { AnimeCard } from "../components/AnimeCard";
+import { CardGridSkeleton } from "../components/AnimeCardSkeleton";
 import { Error as ErrorComponent } from "../components/Error";
 import { Loader } from "../components/Loader";
 import { filterByGenre, getGenres } from "../services/api";
@@ -89,7 +90,7 @@ const Genres = () => {
         )}
       </div>
 
-      {animesLoading && <Loader />}
+      {animesLoading && <CardGridSkeleton count={12} />}
       {animesError && (
         <ErrorComponent message={(animesFetchError as Error).message} />
       )}

@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { AnimeCard } from "../components/AnimeCard";
+import { CardGridSkeleton } from "../components/AnimeCardSkeleton";
 import { AnimeFilters } from "../components/AnimeFilter";
 import { Error } from "../components/Error";
-import { Loader } from "../components/Loader";
 import { getAllAnimes } from "../services/api";
 
 import { useDebounce } from "../hooks/newDebounce";
@@ -41,7 +41,16 @@ const Browse = () => {
     staleTime: 1000 * 60 * 5,
   });
 
-  if (isLoading && !data) return <Loader />;
+  if (isLoading && !data)
+    return (
+      <div className="container mx-auto px-4 py-10">
+        <h1 className="mb-10 text-center text-5xl font-extrabold gradient-text">
+          Browse All Animes
+        </h1>
+        <AnimeFilters filters={filters} setFilters={setFilters} />
+        <CardGridSkeleton count={12} />
+      </div>
+    );
   if (isError) return <Error message={(error as Error).message} />;
 
   const animes: AnimeOut[] = data?.results || [];

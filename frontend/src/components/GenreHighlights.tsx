@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { getAllAnimes } from "../services/api";
 import { AnimeCard } from "./AnimeCard";
+import { CardGridSkeleton } from "./AnimeCardSkeleton";
 import { Error } from "./Error";
-import { Loader } from "./Loader";
 
 const GenreHighlights = ({ genre }: { genre: string }) => {
   const { data, isLoading, isError, error } = useQuery({
@@ -11,7 +11,18 @@ const GenreHighlights = ({ genre }: { genre: string }) => {
     staleTime: 1000 * 60 * 5,
   });
 
-  if (isLoading) return <Loader />;
+  if (isLoading)
+    return (
+      <section className="mb-12">
+        <h2 className="mb-4 text-3xl font-bold gradient-text">
+          {genre} Highlights
+        </h2>
+        <CardGridSkeleton
+          count={5}
+          className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5"
+        />
+      </section>
+    );
   if (isError) return <Error message={(error as Error).message} />;
 
   const animes = data?.results || [];

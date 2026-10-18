@@ -29,6 +29,19 @@ export const AnimeFilters = ({ filters, setFilters }: AnimeFiltersProps) => {
     });
   };
 
+  const genrePill = (active: boolean) =>
+    `rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+      active
+        ? "bg-gradient-to-r from-primary to-accent text-white shadow-sm shadow-primary/30"
+        : "border border-border bg-surface text-text-light hover:border-primary hover:text-primary"
+    }`;
+
+  const selectGenre = (genre?: string) =>
+    setFilters((prev) => ({
+      ...prev,
+      selectedGenre: prev.selectedGenre === genre ? undefined : genre,
+    }));
+
   return (
     <div className="mb-8 flex flex-wrap justify-center items-center gap-4 rounded-2xl glass p-4 shadow-lg">
       <input
@@ -41,23 +54,33 @@ export const AnimeFilters = ({ filters, setFilters }: AnimeFiltersProps) => {
         className="flex-1 min-w-[180px] px-4 py-2 rounded-lg border border-border bg-background/60 text-text placeholder-text-light focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/60 transition duration-200 ease-in-out"
       />
 
-      <select
-        value={filters.selectedGenre || ""}
-        onChange={(e) =>
-          setFilters((prev) => ({
-            ...prev,
-            selectedGenre: e.target.value || undefined,
-          }))
-        }
-        className="flex-1 min-w-[180px] px-4 py-2 rounded-lg border border-border bg-background/60 text-text focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/60 transition duration-200 ease-in-out"
+      <div
+        role="radiogroup"
+        aria-label="Genre"
+        className="flex max-h-32 flex-1 min-w-[180px] flex-wrap gap-1.5 overflow-y-auto pr-1"
       >
-        <option value="">All Genres</option>
+        <button
+          type="button"
+          role="radio"
+          aria-checked={!filters.selectedGenre}
+          onClick={() => selectGenre(undefined)}
+          className={genrePill(!filters.selectedGenre)}
+        >
+          All
+        </button>
         {genres.map((genre) => (
-          <option key={genre} value={genre}>
+          <button
+            key={genre}
+            type="button"
+            role="radio"
+            aria-checked={filters.selectedGenre === genre}
+            onClick={() => selectGenre(genre)}
+            className={genrePill(filters.selectedGenre === genre)}
+          >
             {genre}
-          </option>
+          </button>
         ))}
-      </select>
+      </div>
 
       <input
         type="number"

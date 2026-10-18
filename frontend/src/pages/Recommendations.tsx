@@ -1,8 +1,8 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent, useEffect } from "react";
 import { AnimeCard } from "../components/AnimeCard";
+import { CardGridSkeleton } from "../components/AnimeCardSkeleton";
 import { Error } from "../components/Error";
-import { Loader } from "../components/Loader";
 import { getRecommendations } from "../services/api";
 import {
   QueryMode,
@@ -155,7 +155,7 @@ const Recommendations = () => {
         </button>
       </form>
 
-      {isLoading && <Loader />}
+      {isLoading && <CardGridSkeleton count={12} />}
       {isError && <Error message={(error as Error).message} />}
 
       <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
