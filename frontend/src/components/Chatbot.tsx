@@ -466,7 +466,7 @@ const ChatbotUi = () => {
           transition={{ type: "spring", stiffness: 300, damping: 20 }}
           onClick={() => setIsOpen(true)}
           aria-label="Open Chatbot"
-          className="relative flex items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent p-4 text-white shadow-lg hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+          className="relative flex items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent p-4 text-white shadow-lg glow-primary transition-shadow hover:shadow-2xl focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
         >
           <IoChatbubbleEllipsesOutline size={26} />
           <span className="absolute -right-1 -top-1 flex h-3.5 w-3.5">

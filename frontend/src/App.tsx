@@ -1,5 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
-import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
+import {
+  Route,
+  BrowserRouter as Router,
+  Routes,
+  useLocation,
+} from "react-router-dom";
 import "./App.css";
 
 import ChatbotUi from "./components/Chatbot";
@@ -14,6 +19,25 @@ import SuggestAnime from "./pages/SuggestAnime";
 import Watchlist from "./pages/Watchlist";
 import { pingServer } from "./services/api";
 
+const AppRoutes = () => {
+  const location = useLocation();
+  return (
+    <main className="flex-grow">
+      <div key={location.pathname} className="animate-fade-up">
+        <Routes location={location}>
+          <Route path="/" element={<Home />} />
+          <Route path="/browse" element={<Browse />} />
+          <Route path="/anime/:id" element={<AnimeDetails />} />
+          <Route path="/recommendations" element={<Recommendations />} />
+          <Route path="/genres" element={<Genres />} />
+          <Route path="/suggest" element={<SuggestAnime />} />
+          <Route path="/watchlist" element={<Watchlist />} />
+        </Routes>
+      </div>
+    </main>
+  );
+};
+
 function App() {
   const { isLoading, isError, refetch } = useQuery({
     queryKey: ["ping"],
@@ -25,7 +49,7 @@ function App() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-background text-text p-4">
+      <div className="flex items-center justify-center min-h-screen text-text p-4">
         <div className="text-center">
           <div className="relative w-32 h-32 mx-auto mb-8">
             <img
@@ -57,7 +81,7 @@ function App() {
 
   if (isError) {
     return (
-      <div className="flex items-center justify-center h-screen flex-col gap-2 bg-background text-text">
+      <div className="flex items-center justify-center h-screen flex-col gap-2 text-text">
         <p>Server unavailable. Please try again.</p>
         <button
           className="rounded-full bg-gradient-to-r from-primary to-accent px-5 py-2 font-semibold text-white shadow-md shadow-primary/30 transition-all hover:brightness-110"
@@ -71,19 +95,9 @@ function App() {
 
   return (
     <Router>
-      <div className="min-h-screen flex flex-col bg-background text-text">
+      <div className="min-h-screen flex flex-col text-text">
         <Navbar />
-        <main className="flex-grow">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/browse" element={<Browse />} />
-            <Route path="/anime/:id" element={<AnimeDetails />} />
-            <Route path="/recommendations" element={<Recommendations />} />
-            <Route path="/genres" element={<Genres />} />
-            <Route path="/suggest" element={<SuggestAnime />} />
-            <Route path="/watchlist" element={<Watchlist />} />
-          </Routes>
-        </main>
+        <AppRoutes />
         <ChatbotUi />
         <Footer />
       </div>

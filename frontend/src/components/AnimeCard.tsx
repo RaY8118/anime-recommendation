@@ -35,6 +35,11 @@ export const AnimeCard = ({
             loading="lazy"
             className="w-full h-72 object-cover rounded-lg transition-transform duration-300 group-hover:scale-105"
           />
+          {typeof anime.averageScore === "number" && anime.averageScore > 0 && (
+            <span className="absolute left-3 top-3 z-10 rounded-full bg-black/60 px-2.5 py-1 text-xs font-semibold text-white ring-1 ring-white/15 backdrop-blur-md">
+              ★ {anime.averageScore}
+            </span>
+          )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
             <h3 className="text-xl font-bold text-white leading-tight">
               {anime.title.display_english || anime.title.display_romaji}

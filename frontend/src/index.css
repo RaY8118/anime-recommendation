@@ -44,6 +44,11 @@ html.dark {
 @layer base {
   html {
     scroll-behavior: smooth;
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: dark;
   }
 
   body {
@@ -52,6 +57,10 @@ html.dark {
     min-height: 100vh;
     background-color: var(--color-background);
     background-image:
+      radial-gradient(
+        color-mix(in srgb, var(--color-text) 5%, transparent) 1px,
+        transparent 1.6px
+      ),
       radial-gradient(
         55rem 55rem at 12% -10%,
         color-mix(in srgb, var(--color-primary) 22%, transparent),
@@ -67,8 +76,9 @@ html.dark {
         color-mix(in srgb, var(--color-accent) 18%, transparent),
         transparent 62%
       );
+    background-size: 24px 24px, auto, auto, auto;
+    background-repeat: repeat, no-repeat, no-repeat, no-repeat;
     background-attachment: fixed;
-    background-repeat: no-repeat;
   }
 
   h1,
@@ -201,6 +211,21 @@ html.dark {
 
 .animate-float-slow {
   animation: float-slow 6s ease-in-out infinite;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 /* Chatbot markdown styling */
