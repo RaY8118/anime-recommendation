@@ -74,12 +74,12 @@ const Browse = () => {
 
   return (
     <div className="container mx-auto px-4 py-10">
-      <h1 className="mb-10 text-center text-5xl font-extrabold text-primary drop-shadow-lg">
+      <h1 className="mb-10 text-center text-5xl font-extrabold gradient-text">
         Browse All Animes
       </h1>
 
       {isFetching && (
-        <p className="text-center text-gray-400">Loading more animes...</p>
+        <p className="text-center text-text-light">Loading more animes...</p>
       )}
 
       <AnimeFilters filters={filters} setFilters={setFilters} />
@@ -87,14 +87,14 @@ const Browse = () => {
       {/* 🔧 Anime Cards */}
       <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
         {animes.length === 0 ? (
-          <div className="col-span-full text-center mt-20 text-2xl font-semibold text-gray-500">
+          <div className="col-span-full text-center mt-20 text-2xl font-semibold text-text-light">
             No anime found with the selected filters.{" "}
             {debouncedFilters.searchQuery && (
               <p className="mt-4 text-xl">
                 Did you mean to suggest "{debouncedFilters.searchQuery}"?{" "}
                 <a
                   href={`/suggest?animeName=${debouncedFilters.searchQuery}&fromNotFound=true`}
-                  className="text-primary hover:underline"
+                  className="gradient-text hover:opacity-80"
                 >
                   Suggest it here!
                 </a>
@@ -112,7 +112,7 @@ const Browse = () => {
         <button
           disabled={currentChunkPage === 1 && currentDisplayPage === 1}
           onClick={handlePrevious}
-          className="rounded-lg bg-accent px-6 py-3 text-lg font-semibold text-white shadow-md transition-all duration-300 hover:bg-primary disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-xl bg-gradient-to-r from-primary to-accent px-6 py-3 text-lg font-semibold text-white shadow-md shadow-primary/30 transition-all duration-300 hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Previous
         </button>
@@ -127,7 +127,7 @@ const Browse = () => {
             (currentChunkPage - 1) * chunkSize + endIndex >= (data?.total || 0)
           }
           onClick={handleNext}
-          className="rounded-lg bg-accent px-6 py-3 text-lg font-semibold text-white shadow-md transition-all duration-300 hover:bg-primary disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-xl bg-gradient-to-r from-primary to-accent px-6 py-3 text-lg font-semibold text-white shadow-md shadow-primary/30 transition-all duration-300 hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Next
         </button>

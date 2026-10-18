@@ -41,12 +41,12 @@ const Home = () => {
 
   return (
     <div className="container mx-auto px-4 py-10">
-      <h1 className="mb-10 text-center text-5xl font-extrabold text-primary drop-shadow-lg">
+      <h1 className="mb-10 text-center text-5xl font-extrabold gradient-text">
         Welcome to NekoRec
       </h1>
 
       <section className="mb-16">
-        <h2 className="mb-8 text-center text-4xl font-bold text-accent">
+        <h2 className="mb-8 text-center text-4xl font-bold gradient-text">
           Anime of the Moment
         </h2>
         {loadingRandom && <Loader />}
@@ -59,7 +59,7 @@ const Home = () => {
       </section>
 
       <section className="mb-16">
-        <h2 className="mb-8 text-center text-4xl font-bold text-primary">
+        <h2 className="mb-8 text-center text-4xl font-bold gradient-text">
           Top Rated Animes
         </h2>
         {loadingTopRated && <Loader />}
@@ -68,19 +68,19 @@ const Home = () => {
       </section>
 
       <section className="mb-16">
-        <h2 className="mb-8 text-center text-4xl font-bold text-primary">
+        <h2 className="mb-8 text-center text-4xl font-bold gradient-text">
           Explore Genres
         </h2>
         <Tab.Group>
-          <Tab.List className="flex space-x-1 rounded-xl bg-card/50 p-1">
+          <Tab.List className="flex space-x-1 rounded-2xl glass p-1">
             {genres.map((genre) => (
               <Tab
                 key={genre}
                 className={({ selected }) =>
                   `w-full rounded-lg py-2.5 text-sm font-medium leading-5
-                  ring-offset-2 focus:outline-none focus:ring-2
+                  focus:outline-none
                   ${selected
-                    ? 'bg-primary text-white shadow ring-primary'
+                    ? 'bg-gradient-to-r from-primary to-accent text-white shadow-md shadow-primary/30'
                     : 'text-text-light hover:bg-primary/10 hover:text-primary'
                   }`
                 }
@@ -93,7 +93,7 @@ const Home = () => {
             {genres.map((genre) => (
               <Tab.Panel
                 key={genre}
-                className="rounded-xl bg-card p-3 ring-offset-2 focus:outline-none focus:ring-2 ring-primary"
+                className="rounded-2xl glass p-3 focus:outline-none"
               >
                 <GenreHighlights genre={genre} /> {/* Render existing component */}
               </Tab.Panel>

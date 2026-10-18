@@ -11,7 +11,7 @@ export const AnimeCard = ({
   onDelete?: () => void;
 }) => {
   return (
-    <div className="bg-black/20 backdrop-blur-xl text-text rounded-xl shadow-lg p-5 mb-6 hover:shadow-2xl hover:-translate-y-2 hover:border-primary border border-white/10 transition-all duration-300 transform group relative">
+    <div className="group relative mb-6 transform rounded-2xl glass p-5 text-text shadow-lg transition-all duration-300 hover:-translate-y-2 hover:border-primary hover:shadow-2xl hover:shadow-primary/20">
       {/* Delete button outside of the Link */}
       {onDelete && (
         <Button
@@ -20,7 +20,7 @@ export const AnimeCard = ({
             e.stopPropagation();
             onDelete();
           }}
-          className="absolute top-2 right-2 inline-flex items-center gap-2 rounded-md bg-red-600 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-inner shadow-white/10 focus:not-data-focus:outline-none data-focus:outline data-focus:outline-white data-hover:bg-red-700 data-open:bg-red-600 z-20"
+          className="absolute top-2 right-2 z-20 inline-flex items-center gap-2 rounded-full bg-red-500/90 px-3 py-1.5 text-sm font-semibold text-white shadow-lg shadow-red-500/30 transition-colors data-hover:bg-red-500 focus:outline-none"
         >
           <TrashIcon className="h-4 w-4" />
         </Button>
@@ -35,7 +35,7 @@ export const AnimeCard = ({
             loading="lazy"
             className="w-full h-72 object-cover rounded-lg transition-transform duration-300 group-hover:scale-105"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
+          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
             <h3 className="text-xl font-bold text-white leading-tight">
               {anime.title.display_english || anime.title.display_romaji}
             </h3>

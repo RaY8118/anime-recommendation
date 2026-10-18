@@ -11,7 +11,7 @@ const ThemeToggle = () => {
         return "dark";
       }
     }
-    return "light";
+    return "dark";
   });
 
   useEffect(() => {
@@ -31,7 +31,7 @@ const ThemeToggle = () => {
   return (
     <button
       onClick={toggleTheme}
-      className="p-2 rounded-full bg-transparent hover:bg-card-light text-text-light hover:text-primary transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-75"
+      className="rounded-full p-2 text-text-light transition-colors duration-300 hover:bg-primary/10 hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
     >
       {theme === "light" ? (

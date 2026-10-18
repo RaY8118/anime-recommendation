@@ -3,8 +3,8 @@ import type { ChatAnime } from "../types/anime";
 
 export const ChatAnimeCard = ({ anime }: { anime: ChatAnime }) => {
   const content = (
-    <div className="group flex items-center gap-3 rounded-xl border border-white/10 bg-black/20 p-2 backdrop-blur-xl transition-all duration-300 hover:-translate-y-0.5 hover:border-primary hover:shadow-lg">
-      <div className="h-16 w-12 shrink-0 overflow-hidden rounded-lg bg-background">
+    <div className="group flex items-center gap-3 rounded-xl glass border-border p-2 transition-all duration-300 hover:-translate-y-0.5 hover:border-primary hover:shadow-lg hover:shadow-primary/20">
+      <div className="h-16 w-12 shrink-0 overflow-hidden rounded-lg bg-surface">
         {anime.cover ? (
           <img
             src={anime.cover}

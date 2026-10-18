@@ -54,12 +54,12 @@ const Genres = () => {
 
   return (
     <div className="container mx-auto px-4 py-10">
-      <h1 className="mb-10 text-center text-5xl font-extrabold text-primary drop-shadow-lg">
+      <h1 className="mb-10 text-center text-5xl font-extrabold gradient-text">
         Browse by Genre
       </h1>
 
       {/* Genre selector */}
-      <div className="mb-12 rounded-xl bg-card p-8 shadow-xl">
+      <div className="mb-12 rounded-2xl glass p-8 shadow-xl">
         {genresLoading && <Loader />}
         {genresError && (
           <ErrorComponent message={(genresFetchError as Error).message} />
@@ -76,7 +76,7 @@ const Genres = () => {
               id="genre-select"
               value={selectedGenre}
               onChange={handleGenreChange}
-              className="w-full cursor-pointer appearance-none rounded-lg border border-primary bg-background px-5 py-3 text-lg text-text shadow-sm transition-all duration-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent"
+              className="w-full cursor-pointer appearance-none rounded-lg border border-border bg-background/60 px-5 py-3 text-lg text-text shadow-sm transition-all duration-300 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/60"
             >
               <option value="">-- Choose a genre --</option>
               {genresResponse.map((genre) => (
@@ -107,7 +107,7 @@ const Genres = () => {
                 <button
                   onClick={() => handlePageChange(page - 1)}
                   disabled={page === 1 || animesLoading}
-                  className="rounded-lg bg-accent px-6 py-3 text-lg font-semibold text-white shadow-md transition-all duration-300 hover:bg-primary disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-xl bg-gradient-to-r from-primary to-accent px-6 py-3 text-lg font-semibold text-white shadow-md shadow-primary/30 transition-all duration-300 hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Previous
                 </button>
@@ -117,7 +117,7 @@ const Genres = () => {
                 <button
                   onClick={() => handlePageChange(page + 1)}
                   disabled={!hasMoreAnimes || animesLoading}
-                  className="rounded-lg bg-accent px-6 py-3 text-lg font-semibold text-white shadow-md transition-all duration-300 hover:bg-primary disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded-xl bg-gradient-to-r from-primary to-accent px-6 py-3 text-lg font-semibold text-white shadow-md shadow-primary/30 transition-all duration-300 hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Next
                 </button>

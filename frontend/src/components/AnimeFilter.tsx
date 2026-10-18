@@ -30,7 +30,7 @@ export const AnimeFilters = ({ filters, setFilters }: AnimeFiltersProps) => {
   };
 
   return (
-    <div className="mb-8 flex flex-wrap justify-center items-center gap-4 p-4 bg-card rounded-lg shadow-lg">
+    <div className="mb-8 flex flex-wrap justify-center items-center gap-4 rounded-2xl glass p-4 shadow-lg">
       <input
         type="text"
         value={filters.searchQuery}
@@ -38,7 +38,7 @@ export const AnimeFilters = ({ filters, setFilters }: AnimeFiltersProps) => {
           setFilters((prev) => ({ ...prev, searchQuery: e.target.value }))
         }
         placeholder="Search Anime..."
-        className="flex-1 min-w-[180px] px-4 py-2 rounded-md bg-background text-text-dark placeholder-text-light focus:outline-none focus:ring-2 focus:ring-primary transition duration-200 ease-in-out"
+        className="flex-1 min-w-[180px] px-4 py-2 rounded-lg border border-border bg-background/60 text-text placeholder-text-light focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/60 transition duration-200 ease-in-out"
       />
 
       <select
@@ -49,7 +49,7 @@ export const AnimeFilters = ({ filters, setFilters }: AnimeFiltersProps) => {
             selectedGenre: e.target.value || undefined,
           }))
         }
-        className="flex-1 min-w-[180px] px-4 py-2 rounded-md bg-background text-text-dark focus:outline-none focus:ring-2 focus:ring-primary transition duration-200 ease-in-out"
+        className="flex-1 min-w-[180px] px-4 py-2 rounded-lg border border-border bg-background/60 text-text focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/60 transition duration-200 ease-in-out"
       >
         <option value="">All Genres</option>
         {genres.map((genre) => (
@@ -69,7 +69,7 @@ export const AnimeFilters = ({ filters, setFilters }: AnimeFiltersProps) => {
           }))
         }
         placeholder="Min Score"
-                className="flex-1 min-w-[180px] px-4 py-2 rounded-md bg-background text-text-dark placeholder-text-light focus:outline-none focus:ring-2 focus:ring-primary transition duration-200 ease-in-out"
+                className="flex-1 min-w-[180px] px-4 py-2 rounded-lg border border-border bg-background/60 text-text placeholder-text-light focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/60 transition duration-200 ease-in-out"
       />
 
       <input
@@ -82,7 +82,7 @@ export const AnimeFilters = ({ filters, setFilters }: AnimeFiltersProps) => {
           }))
         }
         placeholder="Max Score"
-                className="flex-1 min-w-[180px] px-4 py-2 rounded-md bg-background text-text-dark placeholder-text-light focus:outline-none focus:ring-2 focus:ring-primary transition duration-200 ease-in-out"
+                className="flex-1 min-w-[180px] px-4 py-2 rounded-lg border border-border bg-background/60 text-text placeholder-text-light focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/60 transition duration-200 ease-in-out"
       />
 
       <select
@@ -93,7 +93,7 @@ export const AnimeFilters = ({ filters, setFilters }: AnimeFiltersProps) => {
             season: e.target.value || undefined,
           }))
         }
-        className="flex-1 min-w-[180px] px-4 py-2 rounded-md bg-background text-text-dark focus:outline-none focus:ring-2 focus:ring-primary transition duration-200 ease-in-out"
+        className="flex-1 min-w-[180px] px-4 py-2 rounded-lg border border-border bg-background/60 text-text focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/60 transition duration-200 ease-in-out"
       >
         <option value="">All Seasons</option>
         <option value="WINTER">Winter</option>
@@ -112,11 +112,11 @@ export const AnimeFilters = ({ filters, setFilters }: AnimeFiltersProps) => {
           }))
         }
         placeholder="Year"
-        className="flex-1 min-w-[120px] px-4 py-2 rounded-md bg-background text-text-dark placeholder-text-light focus:outline-none focus:ring-2 focus:ring-primary transition duration-200 ease-in-out"
+        className="flex-1 min-w-[120px] px-4 py-2 rounded-lg border border-border bg-background/60 text-text placeholder-text-light focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/60 transition duration-200 ease-in-out"
       />
       <button
         onClick={handleClearFilters}
-        className="px-6 py-2 rounded-md bg-accent text-white font-semibold hover:bg-primary focus:outline-none focus:ring-2 focus:ring-accent transition duration-200 ease-in-out"
+        className="rounded-lg bg-gradient-to-r from-primary to-accent px-6 py-2 font-semibold text-white shadow-md shadow-primary/30 transition duration-200 ease-in-out hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-accent/60"
       >
         Clear
       </button>

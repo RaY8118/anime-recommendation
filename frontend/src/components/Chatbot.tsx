@@ -146,10 +146,10 @@ const MessageRow = ({
         <div
           className={`rounded-2xl px-3.5 py-2 text-sm shadow-sm transition-colors ${
             isUser
-              ? "rounded-br-sm bg-accent text-white"
+              ? "rounded-br-sm bg-gradient-to-br from-primary to-accent text-white shadow-md shadow-primary/25"
               : message.error
                 ? "rounded-bl-sm border border-red-400/40 bg-red-500/10 text-text"
-                : "rounded-bl-sm border border-primary/20 bg-background text-text"
+                : "rounded-bl-sm border border-border bg-card text-text"
           }`}
         >
           {isUser ? (
@@ -363,8 +363,8 @@ const ChatbotUi = () => {
               bottom-0 right-0 left-0 top-0 m-0 rounded-none w-full h-full
               md:bottom-4 md:right-8 md:left-auto md:top-auto md:m-0
               md:max-h-[700px] md:w-[400px] md:rounded-2xl md:border
-              md:border-white/10 md:shadow-2xl
-              bg-card
+              md:border-border md:shadow-2xl md:shadow-primary/20
+              backdrop-blur-2xl bg-card
             "
             style={{ resize: "both", minWidth: "320px" }}
           >
@@ -414,11 +414,11 @@ const ChatbotUi = () => {
               ))}
             </div>
 
-            <div className="border-t border-primary/15 bg-card p-3">
+            <div className="border-t border-border bg-card p-3">
               <div className="flex items-center gap-2">
                 <input
                   type="text"
-                  className="min-w-0 flex-1 rounded-full border border-primary/30 bg-background px-4 py-2.5 text-sm text-text placeholder-text-light outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/40"
+                  className="min-w-0 flex-1 rounded-full border border-border bg-surface px-4 py-2.5 text-sm text-text placeholder-text-light outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/40"
                   placeholder="Ask for an anime…"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
@@ -430,7 +430,7 @@ const ChatbotUi = () => {
                   value={selectedModel}
                   onChange={(e) => setSelectedModel(e.target.value)}
                   title="Model"
-                  className="max-w-[90px] cursor-pointer rounded-full border border-primary/30 bg-background px-2 py-2 text-[11px] text-text outline-none md:max-w-[120px]"
+                  className="max-w-[90px] cursor-pointer rounded-full border border-border bg-surface px-2 py-2 text-[11px] text-text outline-none md:max-w-[120px]"
                 >
                   {availableModels.map((model) => (
                     <option key={model.id} value={model.id}>
@@ -443,7 +443,7 @@ const ChatbotUi = () => {
                   onClick={handleSendMessage}
                   disabled={isStreaming || !input.trim()}
                   aria-label="Send"
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-white transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-accent text-white shadow-md shadow-primary/30 transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {isStreaming ? (
                     <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />

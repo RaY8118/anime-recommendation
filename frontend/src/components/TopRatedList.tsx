@@ -24,9 +24,9 @@ const TopRatedList = ({ animes }: TopRatedListProps) => {
             <li>
               <Link
                 to={`/anime/${anime.id}`}
-                className="flex items-center font-black justify-between px-4 py-2 rounded-lg bg-primary shadow-md hover:bg-secondary transition duration-300 ease-in-out hover:ring-2 hover:ring-blue-500 hover:ring-opacity-75"
+                className="flex items-center justify-between rounded-xl glass px-4 py-2 shadow-sm transition duration-300 ease-in-out hover:border-primary hover:shadow-lg hover:shadow-primary/20"
               >
-                <span className="font-medium text-text-dark">
+                <span className="font-medium text-text">
                   {index + 1}.{" "}
                   {anime.title.display_english || anime.title.display_romaji}
                 </span>

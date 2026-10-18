@@ -1,8 +1,12 @@
 const Footer = () => {
   return (
-    <footer className="bg-card text-text-light py-6 mt-16 shadow-lg">
+    <footer className="glass mt-16 py-6 text-text-light">
       <div className="container mx-auto text-center text-lg">
-        <p>&copy; 2025 NekoRec. All rights reserved.</p>
+        <p>
+          &copy; 2025{" "}
+          <span className="font-semibold gradient-text">NekoRec</span>. All rights
+          reserved.
+        </p>
       </div>
     </footer>
   );

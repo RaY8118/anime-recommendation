@@ -132,13 +132,13 @@ const AnimeDetails = () => {
 
   return (
     <div className="container mx-auto px-4 py-10">
-      <div className="flex flex-col gap-8 rounded-xl bg-black/20 backdrop-blur-xl border border-white/10 p-8 shadow-xl lg:flex-row">
+      <div className="flex flex-col gap-8 rounded-2xl glass p-8 shadow-xl lg:flex-row">
         {/* Anime Cover Image */}
         <div className="flex-shrink-0 lg:w-1/3">
           <img
             src={anime.coverImage?.large}
             alt={anime.title.romaji}
-            className="w-full rounded-lg object-cover shadow-lg"
+            className="w-full rounded-2xl object-cover shadow-2xl shadow-primary/20"
           />
         </div>
 
@@ -149,7 +149,7 @@ const AnimeDetails = () => {
             <div className="flex items-center justify-between mb-2">
               <Button
                 onClick={() => navigate(-1)}
-                className="inline-flex items-center gap-2 rounded-md bg-gray-700 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-inner shadow-white/10 focus:not-data-focus:outline-none data-focus:outline data-focus:outline-white data-hover:bg-gray-600 data-open:bg-gray-700"
+                className="inline-flex items-center gap-2 rounded-full bg-surface px-3 py-1.5 text-sm font-semibold text-text shadow-inner shadow-white/10 transition-colors data-hover:bg-primary/20 focus:outline-none"
               >
                 &larr; Back
               </Button>
@@ -160,7 +160,7 @@ const AnimeDetails = () => {
                     <Button
                       onClick={() => addMutation.mutate()}
                       disabled={addMutation.isPending}
-                      className="inline-flex items-center gap-2 rounded-md bg-accent px-3 py-1.5 text-sm/6 font-semibold text-white shadow-inner shadow-white/10 focus:not-data-focus:outline-none data-focus:outline data-focus:outline-white data-hover:bg-accent-dark data-open:bg-accent disabled:opacity-50"
+                      className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-primary to-accent px-3 py-1.5 text-sm font-semibold text-white shadow-md shadow-primary/30 transition-all data-hover:brightness-110 disabled:opacity-50"
                     >
                       <PlusIcon className="h-4 w-4" />
                       {addMutation.isPending ? "Adding..." : "Add"}
@@ -172,11 +172,11 @@ const AnimeDetails = () => {
                         onChange={setUserAnimeStatus}
                       >
                         <div className="relative">
-                          <Listbox.Button className="inline-flex items-center rounded-md border border-gray-300 bg-card px-2 py-1.5 text-sm/6 text-text shadow-inner shadow-white/10 focus:not-data-focus:outline-none data-focus:outline data-focus:outline-white min-w-max">
+                          <Listbox.Button className="inline-flex items-center rounded-full border border-border bg-card px-3 py-1.5 text-sm text-text shadow-inner shadow-white/10 transition-colors data-hover:border-primary focus:outline-none min-w-max">
                             {userAnimeStatus.charAt(0).toUpperCase() +
                               userAnimeStatus.slice(1).toLowerCase()}
                           </Listbox.Button>
-                          <Listbox.Options className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-card py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm min-w-max">
+                          <Listbox.Options className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-xl glass py-1 text-base shadow-lg ring-1 ring-border focus:outline-none sm:text-sm min-w-max">
                             {Object.values(AnimeStatus).map((status) => (
                               <Listbox.Option
                                 key={status}
@@ -226,7 +226,7 @@ const AnimeDetails = () => {
                       <Button
                         onClick={() => updateMutation.mutate(userAnimeStatus)}
                         disabled={updateMutation.isPending}
-                        className="inline-flex items-center gap-2 rounded-md bg-secondary px-3 py-1.5 text-sm/6 font-semibold text-white shadow-inner shadow-white/10 focus:not-data-focus:outline-none data-focus:outline data-focus:outline-white data-hover:bg-secondary-dark data-open:bg-secondary disabled:opacity-50"
+                        className="inline-flex items-center gap-2 rounded-full bg-secondary px-3 py-1.5 text-sm font-semibold text-white shadow-inner shadow-white/10 transition-colors data-hover:bg-secondary-dark disabled:opacity-50"
                       >
                         <PencilSquareIcon className="h-4 w-4" />
                         {updateMutation.isPending ? "..." : "Update"}
@@ -234,7 +234,7 @@ const AnimeDetails = () => {
                       <Button
                         onClick={() => deleteMutation.mutate()}
                         disabled={deleteMutation.isPending}
-                        className="inline-flex items-center gap-2 rounded-md bg-red-600 px-3 py-1.5 text-sm/6 font-semibold text-white shadow-inner shadow-white/10 focus:not-data-focus:outline-none data-focus:outline data-focus:outline-white data-hover:bg-red-700 data-open:bg-red-600 disabled:opacity-50"
+                        className="inline-flex items-center gap-2 rounded-full bg-red-500/90 px-3 py-1.5 text-sm font-semibold text-white shadow-inner shadow-white/10 transition-colors data-hover:bg-red-500 disabled:opacity-50"
                       >
                         <TrashIcon className="h-4 w-4" />
                         {deleteMutation.isPending ? "..." : "Remove"}
@@ -244,7 +244,7 @@ const AnimeDetails = () => {
                 </div>
               )}
             </div>
-            <h1 className="text-3xl font-extrabold text-primary drop-shadow-md lg:text-4xl">
+            <h1 className="text-3xl font-extrabold gradient-text lg:text-4xl">
               {anime.title.display_english || anime.title.display_romaji}
             </h1>
           </div>

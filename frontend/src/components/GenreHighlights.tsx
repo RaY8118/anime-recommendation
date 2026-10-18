@@ -18,7 +18,7 @@ const GenreHighlights = ({ genre }: { genre: string }) => {
 
   return (
     <section className="mb-12">
-      <h2 className="mb-4 text-3xl font-bold text-accent">
+      <h2 className="mb-4 text-3xl font-bold gradient-text">
         {genre} Highlights
       </h2>
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">

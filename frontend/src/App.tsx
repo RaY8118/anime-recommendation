@@ -25,7 +25,7 @@ function App() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 text-white p-4">
+      <div className="flex items-center justify-center min-h-screen bg-background text-text p-4">
         <div className="text-center">
           <div className="relative w-32 h-32 mx-auto mb-8">
             <img
@@ -35,18 +35,18 @@ function App() {
             />
           </div>
 
-          <h1 className="text-5xl md:text-6xl font-extrabold mb-4 drop-shadow-lg ">
+          <h1 className="text-5xl md:text-6xl font-extrabold mb-4 gradient-text">
             Waking up the NekoRec Server!
           </h1>
-          <p className="text-xl md:text-2xl text-gray-300 mb-8 delay-100">
+          <p className="text-xl md:text-2xl text-text-light mb-8 delay-100">
             Please bear with us, this might take a moment...
           </p>
 
-          <div className="mt-8 w-80 md:w-96 mx-auto bg-gray-700 rounded-full h-3 overflow-hidden shadow-lg">
-            <div className="animate-loadingBar bg-gradient-to-r from-primary to-blue-400 h-full w-full"></div>
+          <div className="mt-8 w-80 md:w-96 mx-auto bg-surface border border-border rounded-full h-3 overflow-hidden shadow-lg">
+            <div className="animate-loadingBar bg-gradient-to-r from-primary via-accent to-secondary h-full w-full"></div>
           </div>
 
-          <p className="text-sm text-gray-400 mt-4  delay-200">
+          <p className="text-sm text-text-light mt-4  delay-200">
             (Our server is just stretching, almost ready to serve you purr-fect
             content!)
           </p>
@@ -57,10 +57,10 @@ function App() {
 
   if (isError) {
     return (
-      <div className="flex items-center justify-center h-screen flex-col gap-2 bg-gray-900">
+      <div className="flex items-center justify-center h-screen flex-col gap-2 bg-background text-text">
         <p>Server unavailable. Please try again.</p>
         <button
-          className="px-4 py-2 bg-blue-600 text-white rounded"
+          className="rounded-full bg-gradient-to-r from-primary to-accent px-5 py-2 font-semibold text-white shadow-md shadow-primary/30 transition-all hover:brightness-110"
           onClick={() => refetch()}
         >
           Retry

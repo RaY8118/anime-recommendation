@@ -56,7 +56,7 @@ const Watchlist = () => {
 
   if (!isAuthenticated) {
     return (
-      <div className="text-center text-gray-600 dark:text-gray-400">
+      <div className="text-center text-text-light">
         Please log in to view your watchlist.
       </div>
     );
@@ -69,25 +69,25 @@ const Watchlist = () => {
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold text-center mb-8 text-gray-800 dark:text-white">
+      <h1 className="text-center text-3xl font-bold mb-8 gradient-text">
         My Watchlist
       </h1>
 
       {watchlist.length === 0 ? (
-        <div className="text-center text-gray-600 dark:text-gray-400">
+        <div className="text-center text-text-light">
           Your watchlist is empty.
         </div>
       ) : (
         <Tab.Group>
-          <Tab.List className="flex space-x-1 rounded-xl bg-card/50 p-1 mb-4">
+          <Tab.List className="flex space-x-1 rounded-2xl glass p-1 mb-4">
             {statuses.map((status) => (
               <Tab
                 key={status}
                 className={({ selected }) =>
                   `w-full rounded-lg py-2.5 text-sm font-medium leading-5
-                  ring-offset-2 focus:outline-none focus:ring-2
+                  focus:outline-none
                   ${selected
-                    ? 'bg-primary text-white shadow ring-primary'
+                    ? 'bg-gradient-to-r from-primary to-accent text-white shadow-md shadow-primary/30'
                     : 'text-text-light hover:bg-primary/10 hover:text-primary'
                   }`
                 }
@@ -100,7 +100,7 @@ const Watchlist = () => {
             {statuses.map((status) => (
               <Tab.Panel
                 key={status}
-                className="rounded-xl bg-card p-3 ring-offset-2 focus:outline-none focus:ring-2 ring-primary"
+                className="rounded-2xl glass p-3 focus:outline-none"
               >
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                   {watchlist

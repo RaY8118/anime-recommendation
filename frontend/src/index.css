@@ -1,61 +1,74 @@
-@import url("https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 
-body {
-  font-family: "Inter", sans-serif;
-}
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  font-family: "Lora", serif;
-}
-
-/* Light Theme Variables (Default) */
+/* ============================================================
+   Design tokens
+   Light theme is the polished fallback; dark theme (html.dark)
+   is the primary "neon glass" experience.
+   ============================================================ */
 @theme {
-  --color-primary: #8fbedf;
-  --color-secondary: #a9d8b6;
-  --color-accent: #d9adec;
-  --color-background: #e6f0f6;
-  --color-card: #ffffff;
-  --color-text: #4a5568;
-  --color-text-light: #718096;
-  --color-text-dark: #2d3748;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk", "Inter", ui-sans-serif, sans-serif;
+
+  /* Light */
+  --color-primary: #7c3aed;
+  --color-secondary: #0e7490;
+  --color-accent: #db2777;
+  --color-background: #f4f4fb;
+  --color-card: rgba(255, 255, 255, 0.82);
+  --color-surface: rgba(124, 58, 237, 0.05);
+  --color-border: rgba(124, 58, 237, 0.16);
+  --color-text: #1b1930;
+  --color-text-light: #55536e;
+  --color-text-dark: #26233c;
+  --color-accent-dark: #be185d;
+  --color-secondary-dark: #155e75;
 }
 
-/* Dark Theme Variables */
+/* Dark — the hero theme */
 html.dark {
-  --color-primary: #6d28d9;
-  --color-secondary: #f97316;
-  --color-accent: #ec4899;
-  --color-background: #1a122a;
-  --color-card: #1e293b;
-  --color-text: #f8fafc;
-  --color-text-light: #e0bbe4;
-  --color-text-dark: #957dad;
+  --color-primary: #a855f7;
+  --color-secondary: #22d3ee;
+  --color-accent: #f472b6;
+  --color-background: #08070f;
+  --color-card: rgba(23, 23, 46, 0.72);
+  --color-surface: rgba(255, 255, 255, 0.045);
+  --color-border: rgba(168, 85, 247, 0.22);
+  --color-text: #eceafd;
+  --color-text-light: #a2a0c8;
+  --color-text-dark: #d4d2ee;
+  --color-accent-dark: #db2777;
+  --color-secondary-dark: #0891b2;
 }
 
 @layer base {
-  body {
-    @apply bg-background text-text font-sans;
-    background: linear-gradient(
-      to bottom right,
-      var(--color-background),
-      color-mix(in srgb, var(--color-background) 85%, var(--color-secondary))
-    );
-    animation: gradient-pulse 18s ease infinite alternate;
+  html {
+    scroll-behavior: smooth;
   }
 
-  html.dark body {
-    background: linear-gradient(
-      to right,
-      var(--color-background),
-      var(--color-card)
-    );
-    animation: gradient-pulse 10s ease infinite;
-    background-size: 200% 200%;
+  body {
+    @apply bg-background text-text;
+    font-family: var(--font-sans);
+    min-height: 100vh;
+    background-color: var(--color-background);
+    background-image:
+      radial-gradient(
+        55rem 55rem at 12% -10%,
+        color-mix(in srgb, var(--color-primary) 22%, transparent),
+        transparent 62%
+      ),
+      radial-gradient(
+        48rem 48rem at 108% 8%,
+        color-mix(in srgb, var(--color-secondary) 20%, transparent),
+        transparent 58%
+      ),
+      radial-gradient(
+        50rem 50rem at 50% 118%,
+        color-mix(in srgb, var(--color-accent) 18%, transparent),
+        transparent 62%
+      );
+    background-attachment: fixed;
+    background-repeat: no-repeat;
   }
 
   h1,
@@ -64,34 +77,90 @@ html.dark {
   h4,
   h5,
   h6 {
-    @apply text-primary font-bold;
+    font-family: var(--font-display);
+    @apply font-bold tracking-tight;
   }
 
   a {
-    @apply text-accent hover:text-secondary transition-colors duration-300;
+    @apply text-accent transition-colors duration-300;
   }
 
-  /* Custom scrollbar for a modern look */
+  a:hover {
+    @apply text-secondary;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--color-primary) 45%, transparent);
+    color: var(--color-text);
+  }
+
+  :focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--color-accent) 80%, transparent);
+    outline-offset: 2px;
+  }
+
+  /* Modern scrollbar */
   ::-webkit-scrollbar {
-    width: 8px;
+    width: 10px;
+    height: 10px;
   }
 
   ::-webkit-scrollbar-track {
-    @apply bg-card;
-    border-radius: 10px;
+    background: transparent;
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-primary;
-    border-radius: 10px;
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+    background-color: color-mix(in srgb, var(--color-primary) 55%, transparent);
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-accent;
+    background-color: color-mix(in srgb, var(--color-accent) 75%, transparent);
+  }
+
+  * {
+    scrollbar-color: color-mix(in srgb, var(--color-primary) 55%, transparent)
+      transparent;
   }
 
   .detail-item {
     @apply text-lg;
+  }
+}
+
+/* ============================================================
+   Reusable modern utilities
+   ============================================================ */
+@layer components {
+  .glass {
+    background: var(--color-card);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    border: 1px solid var(--color-border);
+  }
+
+  .gradient-text {
+    background-image: linear-gradient(
+      120deg,
+      var(--color-primary),
+      var(--color-accent) 55%,
+      var(--color-secondary)
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .glow-primary {
+    box-shadow: 0 0 45px -12px
+      color-mix(in srgb, var(--color-primary) 75%, transparent);
+  }
+
+  .glow-accent {
+    box-shadow: 0 0 45px -12px
+      color-mix(in srgb, var(--color-accent) 70%, transparent);
   }
 }
 
@@ -118,6 +187,20 @@ html.dark {
   100% {
     background-position: 0% 50%;
   }
+}
+
+@keyframes float-slow {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.animate-float-slow {
+  animation: float-slow 6s ease-in-out infinite;
 }
 
 /* Chatbot markdown styling */
@@ -162,14 +245,10 @@ html.dark {
 }
 
 .chat-prose code {
-  background: rgba(0, 0, 0, 0.08);
+  background: color-mix(in srgb, var(--color-primary) 14%, transparent);
   padding: 0.1rem 0.3rem;
   border-radius: 4px;
   font-size: 0.85em;
-}
-
-html.dark .chat-prose code {
-  background: rgba(255, 255, 255, 0.12);
 }
 
 .chat-prose h1,
@@ -178,4 +257,3 @@ html.dark .chat-prose code {
   font-size: 1rem;
   margin: 0.5rem 0 0.25rem;
 }
-
