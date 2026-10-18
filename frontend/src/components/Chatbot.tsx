@@ -3,7 +3,28 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import { IoChatbubbleEllipsesOutline, IoCloseOutline } from "react-icons/io5";
 import ReactMarkdown from "react-markdown";
-import { getChatbotModels, sendChatMessage } from "../services/api";
+import {
+  clearChatHistory,
+  getChatbotModels,
+  sendChatMessage,
+} from "../services/api";
+
+const SESSION_STORAGE_KEY = "nekorec_chat_session";
+
+const getSessionId = (): string => {
+  let sessionId = localStorage.getItem(SESSION_STORAGE_KEY);
+  if (!sessionId) {
+    sessionId = crypto.randomUUID();
+    localStorage.setItem(SESSION_STORAGE_KEY, sessionId);
+  }
+  return sessionId;
+};
+
+const resetSessionId = (): string => {
+  const sessionId = crypto.randomUUID();
+  localStorage.setItem(SESSION_STORAGE_KEY, sessionId);
+  return sessionId;
+};
 
 const ChatbotUi = () => {
   const [messages, setMessages] = useState([
@@ -17,9 +38,11 @@ const ChatbotUi = () => {
   const [selectedModel, setSelectedModel] = useState(
     "mistralai/devstral-2512:free"
   );
+  const [sessionId, setSessionId] = useState<string>(() => getSessionId());
 
   const mutation = useMutation({
-    mutationFn: (msg: string) => sendChatMessage(msg, selectedModel),
+    mutationFn: (msg: string) =>
+      sendChatMessage(msg, selectedModel, sessionId),
     onMutate: (message) => {
       setMessages((prev) => [...prev, { from: "user", text: message }]);
       setInput("");
@@ -68,6 +91,18 @@ const ChatbotUi = () => {
     }
   };
 
+  const handleClearChat = async () => {
+    const currentSession = sessionId;
+    setMessages([{ from: "bot", text: "Hi! Ask me for anime suggestions." }]);
+    setSessionId(resetSessionId());
+
+    try {
+      await clearChatHistory(currentSession);
+    } catch (error) {
+      console.error("Error clearing chat history:", error);
+    }
+  };
+
   return (
     <div className="fixed bottom-4 right-8 z-50">
       {isOpen && (
@@ -87,11 +122,7 @@ const ChatbotUi = () => {
             <h3 className="text-lg font-semibold text-text">NekoRec Chatbot</h3>
             <div className="flex items-center gap-2">
               <button
-                onClick={() =>
-                  setMessages([
-                    { from: "bot", text: "Hi! Ask me for anime suggestions." },
-                  ])
-                }
+                onClick={handleClearChat}
                 className="text-text-light hover:text-primary transition-colors text-sm"
               >
                 Clear Chat

@@ -104,7 +104,12 @@ AVAILABLE_MODELS = [
 class ChatBotRequest(BaseModel):
     message: str
     model_id: ModelID = ModelID.GEMMA
+    session_id: Optional[str] = None
 
 
 class ChatBotResponse(BaseModel):
     results: str
+
+
+class ClearChatHistoryRequest(BaseModel):
+    session_id: str

@@ -22,6 +22,15 @@ def anime_to_document(anime: dict[str, Any]) -> Document:
         "title_romaji": romaji,
         "title_english": english,
         "genres": genres,
+        "averageScore": anime.get("averageScore"),
+        "episodes": anime.get("episodes"),
+        "duration": anime.get("duration"),
+        "season": anime.get("season"),
+        "seasonYear": anime.get("seasonYear"),
+        "status": anime.get("status"),
+        "source": anime.get("source"),
+        "studios": anime.get("studios") or [],
+        "popularity": anime.get("popularity"),
     }
 
     return Document(
@@ -30,7 +39,7 @@ def anime_to_document(anime: dict[str, Any]) -> Document:
     )
 
 
-async def generate_anime_embeddings(db):
+async def generate_anime_embeddings(db, force: bool = False):
     collection = db.new_animes
     cursor = collection.find({}, batch_size=200)
     collection_name = vector_db.collection_name
@@ -44,28 +53,33 @@ async def generate_anime_embeddings(db):
     existing_ids = set()
     offset = None
 
-    try:
-        while True:
-            points, next_offset = vector_db.client.scroll(
-                collection_name=collection_name,
-                limit=1000,
-                offset=offset,
-                with_payload=False,
-                with_vectors=False,
-            )
+    if force:
+        print("Force reindex enabled: existing Qdrant points will be overwritten")
+    else:
+        try:
+            while True:
+                points, next_offset = vector_db.client.scroll(
+                    collection_name=collection_name,
+                    limit=1000,
+                    offset=offset,
+                    with_payload=False,
+                    with_vectors=False,
+                )
 
-            for point in points:
-                existing_ids.add(int(point.id))
+                for point in points:
+                    existing_ids.add(int(point.id))
 
-            if next_offset is None:
-                break
+                if next_offset is None:
+                    break
 
-            offset = next_offset
+                offset = next_offset
 
-        print(f"Found {len(existing_ids)} existing anime in Qdrant")
+            print(f"Found {len(existing_ids)} existing anime in Qdrant")
 
-    except Exception as exc:
-        raise RuntimeError(f"Could not retrieve existing Qdrant IDs: {exc}") from exc
+        except Exception as exc:
+            raise RuntimeError(
+                f"Could not retrieve existing Qdrant IDs: {exc}"
+            ) from exc
 
     async def flush_batch():
         nonlocal processed, failed, batch, batch_ids

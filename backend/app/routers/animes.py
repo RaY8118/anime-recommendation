@@ -10,6 +10,7 @@ from app.schemas.animes import (
     AnimesListResponse,
     ChatBotRequest,
     ChatBotResponse,
+    ClearChatHistoryRequest,
     GenresResponse,
     MessageResponse,
     QueryMode,
@@ -23,7 +24,7 @@ from app.utils.anime_api import get_anime
 from app.utils.anime_embedding_generation import generate_anime_embeddings
 from app.utils.embeddings import generate_embeddings
 from app.utils.fetch_status import get_current_page, update_current_page
-from app.utils.langbot import langchain_chatbot
+from app.utils.langbot import clear_chat_history, langchain_chatbot
 from app.utils.validate_params import validate_query_params
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from motor.motor_asyncio import AsyncIOMotorDatabase
@@ -280,9 +281,10 @@ async def top_rated_anime(
 
 @router.get("/generate-embeddings")
 async def create_embeddings(
+    force: bool = False,
     db: AsyncIOMotorDatabase = Depends(get_database),
 ):
-    result = await generate_anime_embeddings(db)
+    result = await generate_anime_embeddings(db, force=force)
 
     return {"message": "Embedding generation completed", **result}
 
@@ -309,7 +311,30 @@ async def get_chatbot_models():
 async def Chatbot(
     request: ChatBotRequest, db: AsyncIOMotorDatabase = Depends(get_database)
 ):
-    results = await langchain_chatbot(request.message, request.model_id, db)
+    try:
+        results = await langchain_chatbot(
+            request.message,
+            request.model_id,
+            db,
+            session_id=request.session_id or "default",
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=503, detail=f"Chatbot is unavailable: {exc}"
+        ) from exc
+
     if not results:
         raise HTTPException(status_code=404, detail="No results found")
     return {"results": results}
+
+
+@router.post("/chatbot/clear", response_model=MessageResponse)
+async def clear_chatbot(request: ClearChatHistoryRequest):
+    try:
+        await clear_chat_history(request.session_id)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=503, detail=f"Failed to clear chat history: {exc}"
+        ) from exc
+
+    return {"message": "Chat history cleared"}

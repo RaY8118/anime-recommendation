@@ -3,7 +3,7 @@ import os
 from app.utils.embeddings import embeddings
 from langchain_qdrant import QdrantVectorStore
 from qdrant_client import QdrantClient
-from qdrant_client.http.models import Distance, VectorParams
+from qdrant_client.http.models import Distance, PayloadSchemaType, VectorParams
 
 COLLECTION_NAME = "anime"
 BATCH_SIZE = 200
@@ -23,6 +23,29 @@ if not client.collection_exists(COLLECTION_NAME):
             distance=Distance.COSINE,
         ),
     )
+
+
+PAYLOAD_INDEXES = {
+    "metadata.genres": PayloadSchemaType.KEYWORD,
+    "metadata.studios": PayloadSchemaType.KEYWORD,
+    "metadata.status": PayloadSchemaType.KEYWORD,
+    "metadata.season": PayloadSchemaType.KEYWORD,
+    "metadata.seasonYear": PayloadSchemaType.INTEGER,
+    "metadata.averageScore": PayloadSchemaType.INTEGER,
+    "metadata.popularity": PayloadSchemaType.INTEGER,
+}
+
+for field_name, field_schema in PAYLOAD_INDEXES.items():
+    try:
+        client.create_payload_index(
+            collection_name=COLLECTION_NAME,
+            field_name=field_name,
+            field_schema=field_schema,
+            wait=False,
+        )
+    except Exception as exc:
+        print(f"Could not create payload index for {field_name}: {exc}")
+
 
 vector_db = QdrantVectorStore(
     client=client,

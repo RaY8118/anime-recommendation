@@ -133,9 +133,22 @@ export const getChatbotModels = async () => {
 
 export const sendChatMessage = async (
   message: string,
-  model_id: string = "mistralai/devstral-2512:free"
+  model_id: string = "mistralai/devstral-2512:free",
+  session_id?: string
 ): Promise<AxiosResponse<ChatbotResponse>> => {
-  return api.post(`${API_URL}/v1/animes/chatbot`, { message, model_id });
+  return api.post(`${API_URL}/v1/animes/chatbot`, {
+    message,
+    model_id,
+    session_id,
+  });
+};
+
+export const clearChatHistory = async (
+  session_id: string
+): Promise<AxiosResponse<MessageResponse>> => {
+  return api.post(`${API_URL}/v1/animes/chatbot/clear`, {
+    session_id,
+  });
 };
 
 export const getWatchlist = async (
