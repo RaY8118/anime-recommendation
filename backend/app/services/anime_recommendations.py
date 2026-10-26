@@ -1,5 +1,3 @@
-from typing import List, Optional
-
 from fastapi import HTTPException
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from qdrant_client.http.models import (
@@ -13,9 +11,9 @@ from app.utils.qdrant_client import client, embeddings
 
 async def _get_animes_by_ids(
     db: AsyncIOMotorDatabase,
-    ids: List[int],
-    projection: Optional[dict] = None,
-) -> List[dict]:
+    ids: list[int],
+    projection: dict | None = None,
+) -> list[dict]:
     if not ids:
         return []
 
@@ -31,7 +29,7 @@ async def _get_animes_by_ids(
 
 async def retrieve_by_name(
     query: str, db: AsyncIOMotorDatabase, top_k: int = 5
-) -> List[dict]:
+) -> list[dict]:
     anime_collection = db.new_animes
 
     anime = await anime_collection.find_one(
@@ -94,8 +92,10 @@ async def retrieve_by_name(
 
 async def retrieve_by_genre(
     query: str, db: AsyncIOMotorDatabase, top_k: int = 5
-) -> List[dict]:
-    genres = [genre.strip().title() for genre in (query or "").split(",") if genre.strip()]
+) -> list[dict]:
+    genres = [
+        genre.strip().title() for genre in (query or "").split(",") if genre.strip()
+    ]
 
     if not genres:
         return []
@@ -133,7 +133,7 @@ async def retrieve_by_genre(
 
 async def retrieve_by_description(
     query: str, db: AsyncIOMotorDatabase, top_k: int = 5
-) -> List[dict]:
+) -> list[dict]:
     description = (query or "").strip()
 
     if not description:

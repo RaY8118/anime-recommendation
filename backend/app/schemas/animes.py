@@ -1,5 +1,4 @@
 from enum import Enum
-from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -17,55 +16,55 @@ class AnimeStatus(str, Enum):
 
 
 class Title(BaseModel):
-    romaji: Optional[str]
-    english: Optional[str]
-    display_romaji: Optional[str]
-    display_english: Optional[str]
+    romaji: str | None
+    english: str | None
+    display_romaji: str | None
+    display_english: str | None
 
 
 class CoverImage(BaseModel):
-    large: Optional[str]
+    large: str | None
 
 
 class Anime(BaseModel):
-    id: Optional[int]
+    id: int | None
     title: Title
-    description: Optional[str]
-    genres: List[str]
-    averageScore: Optional[int] = None
-    episodes: Optional[int] = None
-    duration: Optional[int] = None
-    season: Optional[str] = None
-    seasonYear: Optional[int] = None
-    status: Optional[AnimeStatus] = None
-    source: Optional[str] = None
-    studios: Optional[List[str]] = Field(default_factory=list)
-    coverImage: Optional[CoverImage] = None
-    embedding: Optional[List[float]] = Field(default_factory=list)
+    description: str | None
+    genres: list[str]
+    averageScore: int | None = None
+    episodes: int | None = None
+    duration: int | None = None
+    season: str | None = None
+    seasonYear: int | None = None
+    status: AnimeStatus | None = None
+    source: str | None = None
+    studios: list[str] | None = Field(default_factory=list)
+    coverImage: CoverImage | None = None
+    embedding: list[float] | None = Field(default_factory=list)
 
 
 class AnimeOut(BaseModel):
-    id: Optional[int]
+    id: int | None
     title: Title
-    description: Optional[str]
-    genres: List[str]
-    averageScore: Optional[int] = None
-    episodes: Optional[int] = None
-    duration: Optional[int] = None
-    season: Optional[str] = None
-    seasonYear: Optional[int] = None
-    status: Optional[AnimeStatus] = None
-    source: Optional[str] = None
-    studios: Optional[List[str]] = Field(default_factory=list)
-    coverImage: Optional[CoverImage] = None
+    description: str | None
+    genres: list[str]
+    averageScore: int | None = None
+    episodes: int | None = None
+    duration: int | None = None
+    season: str | None = None
+    seasonYear: int | None = None
+    status: AnimeStatus | None = None
+    source: str | None = None
+    studios: list[str] | None = Field(default_factory=list)
+    coverImage: CoverImage | None = None
 
 
 class AnimeResponse(BaseModel):
-    anime: Optional[AnimeOut]
+    anime: AnimeOut | None
 
 
 class AnimesListResponse(BaseModel):
-    results: List[AnimeOut]
+    results: list[AnimeOut]
     total: int
     page: int
     perPage: int
@@ -73,15 +72,15 @@ class AnimesListResponse(BaseModel):
 
 
 class AnimeListResponse(BaseModel):
-    results: List[AnimeOut]
+    results: list[AnimeOut]
 
 
 class GenresResponse(BaseModel):
-    genres: List[str]
+    genres: list[str]
 
 
 class MessageResponse(BaseModel):
-    message: Optional[str]
+    message: str | None
 
 
 class QueryMode(str, Enum):
@@ -104,7 +103,7 @@ AVAILABLE_MODELS = [
 class ChatBotRequest(BaseModel):
     message: str
     model_id: ModelID = ModelID.GEMMA
-    session_id: Optional[str] = None
+    session_id: str | None = None
 
 
 class ChatBotResponse(BaseModel):

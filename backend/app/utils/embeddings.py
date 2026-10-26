@@ -1,5 +1,4 @@
 import os
-from typing import List, Optional
 
 from langchain_openai import OpenAIEmbeddings
 
@@ -11,7 +10,7 @@ embeddings = OpenAIEmbeddings(
 )
 
 
-async def generate_embeddings(text: str) -> Optional[List[float]]:
+async def generate_embeddings(text: str) -> list[float] | None:
     try:
         embedding = embeddings.embed_query(text)
 

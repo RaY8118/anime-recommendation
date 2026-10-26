@@ -1,5 +1,8 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException
+from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from app.dependencies import get_database
 from app.schemas.animes import AnimeStatus
@@ -10,8 +13,6 @@ from app.schemas.watchlist import (
     WatchlistResponse,
 )
 from app.utils.auth0_security import get_current_user_id
-from fastapi import APIRouter, Depends, HTTPException
-from motor.motor_asyncio import AsyncIOMotorDatabase
 
 router = APIRouter()
 
@@ -51,7 +52,7 @@ async def add_to_watchlist(
         return WatchlistResponse(watchlist=new_watchlist)
 
 
-@router.get("/", response_model=List[WatchlistAnimeResponseItem])
+@router.get("/", response_model=list[WatchlistAnimeResponseItem])
 async def get_watchlist(
     user_id: str = Depends(get_current_user_id),
     db: AsyncIOMotorDatabase = Depends(get_database),

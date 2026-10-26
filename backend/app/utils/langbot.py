@@ -1,10 +1,6 @@
 import asyncio
 import os
-from typing import List, Optional
 
-from app.services.anime_recommendations import _get_animes_by_ids
-from app.utils.embeddings import embeddings
-from app.utils.qdrant_client import COLLECTION_NAME, client
 from dotenv import load_dotenv
 from langchain_community.chat_message_histories import RedisChatMessageHistory
 from langchain_core.documents import Document
@@ -16,6 +12,10 @@ from langchain_openrouter import ChatOpenRouter
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from pydantic import BaseModel, Field
 from qdrant_client.http.models import FieldCondition, Filter, MatchValue, Range
+
+from app.services.anime_recommendations import _get_animes_by_ids
+from app.utils.embeddings import embeddings
+from app.utils.qdrant_client import COLLECTION_NAME, client
 
 load_dotenv()
 
@@ -35,7 +35,11 @@ RENDER_HINT = "Use simple Markdown: **bold**, *italic*, and basic bullet lists o
 
 MODEL_SPECIFIC_INSTRUCTIONS = {
     "google/gemini-2.5-flash-lite": (
-        f"{BASE_RAG_INFO} Focus on being fast, concise, and friendly. Use bullet points for readability. {RENDER_HINT}"
+        f"{
+            BASE_RAG_INFO
+        } Focus on being fast, concise, and friendly. Use bullet points for readability. {
+            RENDER_HINT
+        }"
     ),
     "openrouter/free": (
         f"{BASE_RAG_INFO} Be detailed in explanations but keep it concise. Mention why each anime matches the user's preference. {RENDER_HINT}"
@@ -61,31 +65,31 @@ class AnimeQuery(BaseModel):
             "user's message and the conversation so far. Do not put filters here."
         )
     )
-    genres: List[str] = Field(
+    genres: list[str] = Field(
         default_factory=list,
         description="AniList genre names in Title Case (e.g. 'Action', 'Sci-Fi').",
     )
-    studios: List[str] = Field(
+    studios: list[str] = Field(
         default_factory=list,
         description="Studio names in Title Case (e.g. 'Madhouse').",
     )
-    year_from: Optional[int] = Field(
+    year_from: int | None = Field(
         default=None, description="Earliest release year the user asked for."
     )
-    year_to: Optional[int] = Field(
+    year_to: int | None = Field(
         default=None, description="Latest release year the user asked for."
     )
-    min_score: Optional[int] = Field(
+    min_score: int | None = Field(
         default=None, description="Minimum average score (0-100) the user asked for."
     )
-    status: List[str] = Field(
+    status: list[str] = Field(
         default_factory=list,
         description=(
             "Release status. Allowed values: FINISHED, RELEASING, "
             "NOT_YET_RELEASED, CANCELLED, HIATUS."
         ),
     )
-    season: List[str] = Field(
+    season: list[str] = Field(
         default_factory=list,
         description="Season of release. Allowed values: WINTER, SPRING, SUMMER, FALL.",
     )
@@ -122,7 +126,7 @@ async def clear_chat_history(session_id: str) -> None:
     await asyncio.to_thread(history.clear)
 
 
-def format_docs(docs: List[Document]) -> str:
+def format_docs(docs: list[Document]) -> str:
     if not docs:
         return "No matching anime records found"
 
@@ -190,11 +194,11 @@ def anime_card(meta: dict) -> dict:
 
 
 async def extract_query(
-    message: str, history: List[BaseMessage], model_id: str
+    message: str, history: list[BaseMessage], model_id: str
 ) -> AnimeQuery:
     try:
         llm = ChatOpenRouter(model=model_id).with_structured_output(AnimeQuery)
-        messages: List[BaseMessage] = [SystemMessage(content=EXTRACTION_INSTRUCTION)]
+        messages: list[BaseMessage] = [SystemMessage(content=EXTRACTION_INSTRUCTION)]
         messages.extend(history[-6:])
         messages.append(HumanMessage(content=message))
 
@@ -213,7 +217,7 @@ async def extract_query(
         return AnimeQuery(query=message)
 
 
-def build_qdrant_filter(anime_query: AnimeQuery) -> Optional[Filter]:
+def build_qdrant_filter(anime_query: AnimeQuery) -> Filter | None:
     must = []
 
     if anime_query.genres:
@@ -274,7 +278,7 @@ def build_qdrant_filter(anime_query: AnimeQuery) -> Optional[Filter]:
 
 
 def _query_qdrant(
-    query_embedding: List[float], filters: Optional[Filter], limit: int
+    query_embedding: list[float], filters: Filter | None, limit: int
 ) -> list:
     try:
         results = client.query_points(
@@ -294,10 +298,10 @@ def _query_qdrant(
 async def retrieve_anime_context(
     query: str,
     db: AsyncIOMotorDatabase,
-    filters: Optional[Filter] = None,
+    filters: Filter | None = None,
     top_k: int = RETRIEVAL_TOP_K,
     candidates: int = RETRIEVAL_CANDIDATES,
-) -> List[Document]:
+) -> list[Document]:
     text = (query or "").strip()
     if not text:
         return []
@@ -346,8 +350,8 @@ async def retrieve_anime_context(
 
 
 async def safe_retrieve_anime_context(
-    query: str, db: AsyncIOMotorDatabase, filters: Optional[Filter] = None
-) -> List[Document]:
+    query: str, db: AsyncIOMotorDatabase, filters: Filter | None = None
+) -> list[Document]:
     try:
         return await asyncio.wait_for(
             retrieve_anime_context(query, db, filters),
@@ -455,7 +459,7 @@ async def stream_chatbot(
         {"question": message, "context": context, "history": history_messages}
     ).__aiter__()
 
-    chunks: List[str] = []
+    chunks: list[str] = []
     try:
         while True:
             try:

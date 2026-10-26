@@ -1,8 +1,10 @@
 import json
 import random
-from typing import Optional
 
-import numpy as np
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi.responses import StreamingResponse
+from motor.motor_asyncio import AsyncIOMotorDatabase
+
 from app.dependencies import get_database
 from app.schemas.animes import (
     AVAILABLE_MODELS,
@@ -23,13 +25,9 @@ from app.services.anime_recommendations import (
 )
 from app.utils.anime_api import get_anime
 from app.utils.anime_embedding_generation import generate_anime_embeddings
-from app.utils.embeddings import generate_embeddings
 from app.utils.fetch_status import get_current_page, update_current_page
 from app.utils.langbot import clear_chat_history, langchain_chatbot, stream_chatbot
 from app.utils.validate_params import validate_query_params
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
-from fastapi.responses import StreamingResponse
-from motor.motor_asyncio import AsyncIOMotorDatabase
 
 router = APIRouter()
 
@@ -94,12 +92,12 @@ async def recommend_anime(
 async def get_animes(
     page: int = Query(1, ge=1),
     per_page: int = Query(12, ge=1, le=100),
-    genre: Optional[str] = Query(None),
-    min_score: Optional[int] = Query(None),
-    max_score: Optional[int] = Query(None),
-    season: Optional[str] = Query(None),
-    year: Optional[int] = Query(None),
-    query: Optional[str] = Query(None),
+    genre: str | None = Query(None),
+    min_score: int | None = Query(None),
+    max_score: int | None = Query(None),
+    season: str | None = Query(None),
+    year: int | None = Query(None),
+    query: str | None = Query(None),
     db: AsyncIOMotorDatabase = Depends(get_database),
 ):
     skip = (page - 1) * per_page
@@ -204,9 +202,7 @@ async def search_anime(query: str, db: AsyncIOMotorDatabase = Depends(get_databa
             ]
         },
         ANIME_PROJECTION,
-    ).limit(
-        20
-    )  # Limit search results for performance
+    ).limit(20)  # Limit search results for performance
 
     results = [anime async for anime in cursor]
 
