@@ -1,14 +1,24 @@
 import asyncio
 import os
+import warnings
+from typing import Annotated, TypedDict
 
 from dotenv import load_dotenv
-from langchain_community.chat_message_histories import RedisChatMessageHistory
 from langchain_core.documents import Document
-from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
-from langchain_core.output_parsers import StrOutputParser
+from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_openrouter import ChatOpenRouter
+
+# Suppress the Reviver(`allowed_objects`) pending-deprecation warning that
+# langgraph emits at import time (injected inside the library itself).
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", message=r".*`allowed_objects`.*")
+    from langgraph.config import get_stream_writer
+    from langgraph.graph import END, START, StateGraph
+    from langgraph.graph.message import add_messages
+
+    from app.utils.redis_lite_saver import AsyncRedisLiteSaver
+
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from pydantic import BaseModel, Field
 from qdrant_client.http.models import FieldCondition, Filter, MatchValue, Range
@@ -20,7 +30,6 @@ from app.utils.qdrant_client import COLLECTION_NAME, client
 load_dotenv()
 
 REDIS_URL = os.getenv("REDIS_URL")
-REDIS_KEY_PREFIX = "nekorec:chat:"
 REDIS_HISTORY_TTL = int(os.getenv("REDIS_HISTORY_TTL", "86400"))
 HISTORY_SIZE = 20
 RETRIEVAL_TOP_K = 8
@@ -95,35 +104,60 @@ class AnimeQuery(BaseModel):
     )
 
 
-class BoundedRedisChatMessageHistory(RedisChatMessageHistory):
-    def __init__(self, *args, max_messages: int = HISTORY_SIZE, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.max_messages = max_messages
-
-    def add_message(self, message: BaseMessage) -> None:
-        super().add_message(message)
-        try:
-            self.redis_client.ltrim(self.key, 0, self.max_messages - 1)
-        except Exception as exc:
-            print(f"Trimming Redis chat history failed: {exc}")
+class ChatState(TypedDict):
+    messages: Annotated[list[BaseMessage], add_messages]
+    docs: list[Document]
 
 
-def _get_history(session_id: str) -> BoundedRedisChatMessageHistory:
-    if not REDIS_URL:
-        raise RuntimeError("REDIS_URL is not configured")
+_checkpointer: AsyncRedisLiteSaver | None = None
+_checkpointer_ready = False
+_checkpointer_lock = asyncio.Lock()
 
-    return BoundedRedisChatMessageHistory(
-        session_id=session_id,
-        url=REDIS_URL,
-        key_prefix=REDIS_KEY_PREFIX,
-        ttl=REDIS_HISTORY_TTL,
-        max_messages=HISTORY_SIZE,
-    )
+
+async def get_checkpointer() -> AsyncRedisLiteSaver:
+    global _checkpointer, _checkpointer_ready
+
+    if _checkpointer is not None and _checkpointer_ready:
+        return _checkpointer
+
+    async with _checkpointer_lock:
+        if _checkpointer is None:
+            if not REDIS_URL:
+                raise RuntimeError("REDIS_URL is not configured")
+            _checkpointer = AsyncRedisLiteSaver(
+                redis_url=REDIS_URL,
+                ttl_seconds=REDIS_HISTORY_TTL,
+            )
+        if not _checkpointer_ready:
+            await _checkpointer.asetup()
+            _checkpointer_ready = True
+
+    return _checkpointer
+
+
+async def setup_checkpointer() -> None:
+    await get_checkpointer()
+
+
+async def close_checkpointer() -> None:
+    global _checkpointer, _checkpointer_ready
+
+    async with _checkpointer_lock:
+        if _checkpointer is not None:
+            try:
+                await _checkpointer.close()
+            except Exception as exc:
+                print(f"Closing Redis checkpointer failed: {exc}")
+        _checkpointer = None
+        _checkpointer_ready = False
 
 
 async def clear_chat_history(session_id: str) -> None:
-    history = await asyncio.to_thread(_get_history, session_id)
-    await asyncio.to_thread(history.clear)
+    try:
+        checkpointer = await get_checkpointer()
+        await checkpointer.adelete_thread(session_id)
+    except Exception as exc:
+        print(f"Clearing chat history failed: {exc}")
 
 
 def format_docs(docs: list[Document]) -> str:
@@ -362,49 +396,95 @@ async def safe_retrieve_anime_context(
         return []
 
 
+async def _build_session_graph(db: AsyncIOMotorDatabase, model_id: str):
+    checkpointer = await get_checkpointer()
+    instruction = MODEL_SPECIFIC_INSTRUCTIONS.get(model_id, DEFAULT_PROMPT)
+
+    async def retrieve_node(state: ChatState) -> dict:
+        messages = list(state.get("messages") or [])
+        if not messages:
+            return {"docs": []}
+
+        current = messages[-1]
+        prior = messages[:-1][-HISTORY_SIZE:]
+        message_text = (
+            current.content
+            if isinstance(current.content, str)
+            else str(current.content)
+        )
+
+        anime_query = await extract_query(message_text, prior, model_id)
+        qdrant_filter = build_qdrant_filter(anime_query)
+
+        writer = get_stream_writer()
+        if writer is not None:
+            writer({"event": "status", "data": {"stage": "searching"}})
+
+        docs = await safe_retrieve_anime_context(
+            anime_query.query or message_text, db, qdrant_filter
+        )
+
+        if writer is not None and docs:
+            writer(
+                {
+                    "event": "sources",
+                    "data": {"anime": [anime_card(doc.metadata or {}) for doc in docs]},
+                }
+            )
+
+        return {"docs": docs}
+
+    async def chat_node(state: ChatState) -> dict:
+        messages = list(state.get("messages") or [])
+        if not messages:
+            return {"messages": []}
+
+        current = messages[-1]
+        history = messages[:-1][-HISTORY_SIZE:]
+        message_text = (
+            current.content
+            if isinstance(current.content, str)
+            else str(current.content)
+        )
+
+        docs = state.get("docs") or []
+        context = format_docs(docs)
+
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", f"{instruction}\n\nContext:\n{{context}}"),
+                MessagesPlaceholder(variable_name="history"),
+                ("human", "{question}"),
+            ]
+        )
+
+        llm = ChatOpenRouter(model=model_id)
+        chain = prompt | llm
+
+        response = await chain.ainvoke(
+            {"context": context, "history": history, "question": message_text}
+        )
+        return {"messages": [response]}
+
+    builder = StateGraph(ChatState)
+    builder.add_node("retrieve", retrieve_node)
+    builder.add_node("chat", chat_node)
+    builder.add_edge(START, "retrieve")
+    builder.add_edge("retrieve", "chat")
+    builder.add_edge("chat", END)
+
+    return builder.compile(checkpointer=checkpointer)
+
+
 async def langchain_chatbot(
     message: str, model_id: str, db: AsyncIOMotorDatabase, session_id: str = "default"
 ) -> str:
-    instruction = MODEL_SPECIFIC_INSTRUCTIONS.get(model_id, DEFAULT_PROMPT)
-
     try:
-        history = await asyncio.to_thread(_get_history, session_id)
-        history_messages = await asyncio.to_thread(lambda: history.messages)
-    except Exception as exc:
-        print(f"Loading chat history failed: {exc}")
-        history_messages = []
-
-    anime_query = await extract_query(message, history_messages, model_id)
-    qdrant_filter = build_qdrant_filter(anime_query)
-    docs = await safe_retrieve_anime_context(
-        anime_query.query or message, db, qdrant_filter
-    )
-    context = format_docs(docs)
-
-    llm = ChatOpenRouter(model=model_id)
-
-    prompt = ChatPromptTemplate.from_messages(
-        [
-            ("system", f"{instruction}\n\nContext:\n{{context}}"),
-            MessagesPlaceholder(variable_name="history"),
-            ("human", "{question}"),
-        ]
-    )
-
-    rag_chain = prompt | llm | StrOutputParser()
-
-    chain_with_history = RunnableWithMessageHistory(
-        rag_chain,
-        get_session_history=_get_history,
-        input_messages_key="question",
-        history_messages_key="history",
-    )
-
-    try:
-        response = await asyncio.wait_for(
-            chain_with_history.ainvoke(
-                {"question": message, "context": context},
-                config={"configurable": {"session_id": session_id}},
+        graph = await _build_session_graph(db, model_id)
+        result = await asyncio.wait_for(
+            graph.ainvoke(
+                {"messages": [HumanMessage(content=message)]},
+                config={"configurable": {"thread_id": session_id}},
             ),
             timeout=LLM_TIMEOUT_SECONDS,
         )
@@ -412,66 +492,67 @@ async def langchain_chatbot(
         print(f"Chatbot LLM call failed: {exc}")
         return "I'm having trouble connecting to my brain right now!"
 
-    return response
+    final_messages = result.get("messages") or []
+    if not final_messages:
+        return "I'm having trouble connecting to my brain right now!"
+
+    answer = final_messages[-1].content
+    return answer if isinstance(answer, str) else str(answer)
 
 
 async def stream_chatbot(
     message: str, model_id: str, db: AsyncIOMotorDatabase, session_id: str = "default"
 ):
-    instruction = MODEL_SPECIFIC_INSTRUCTIONS.get(model_id, DEFAULT_PROMPT)
-
-    try:
-        history = await asyncio.to_thread(_get_history, session_id)
-        history_messages = await asyncio.to_thread(lambda: history.messages)
-    except Exception as exc:
-        print(f"Loading chat history failed: {exc}")
-        history = None
-        history_messages = []
-
     yield ("status", {"stage": "thinking"})
 
-    anime_query = await extract_query(message, history_messages, model_id)
-    qdrant_filter = build_qdrant_filter(anime_query)
+    try:
+        graph = await _build_session_graph(db, model_id)
+    except Exception as exc:
+        print(f"Loading chat history failed: {exc}")
+        yield (
+            "error",
+            {"message": "I'm having trouble connecting to my brain right now!"},
+        )
+        return
 
-    yield ("status", {"stage": "searching"})
-
-    docs = await safe_retrieve_anime_context(
-        anime_query.query or message, db, qdrant_filter
-    )
-    context = format_docs(docs)
-
-    if docs:
-        yield ("sources", {"anime": [anime_card(doc.metadata or {}) for doc in docs]})
-
-    llm = ChatOpenRouter(model=model_id)
-
-    prompt = ChatPromptTemplate.from_messages(
-        [
-            ("system", f"{instruction}\n\nContext:\n{{context}}"),
-            MessagesPlaceholder(variable_name="history"),
-            ("human", "{question}"),
-        ]
-    )
-
-    chain = prompt | llm | StrOutputParser()
-
-    stream = chain.astream(
-        {"question": message, "context": context, "history": history_messages}
+    stream = graph.astream(
+        {"messages": [HumanMessage(content=message)]},
+        {"configurable": {"thread_id": session_id}},
+        stream_mode=["messages", "custom"],
     ).__aiter__()
 
     chunks: list[str] = []
     try:
         while True:
             try:
-                chunk = await asyncio.wait_for(
+                event = await asyncio.wait_for(
                     stream.__anext__(), timeout=STREAM_TIMEOUT_SECONDS
                 )
             except StopAsyncIteration:
                 break
 
-            if chunk:
-                chunks.append(chunk)
-                yield ("token", {"text": chunk})
+            if not event:
+                continue
+
+            mode, payload = event
+
+            if mode == "messages":
+                chunk, metadata = payload
+                text = getattr(chunk, "content", None)
+                if (
+                    metadata.get("langgraph_node") == "chat"
+                    and isinstance(text, str)
+                    and text
+                ):
+                    chunks.append(text)
+                    yield ("token", {"text": text})
+            elif mode == "custom":
+                event_name = (payload or {}).get("event")
+                data = (payload or {}).get("data")
+                if event_name == "status" and data:
+                    yield ("status", data)
+                elif event_name == "sources" and data:
+                    yield ("sources", data)
     except Exception as exc:
         print(f"Streaming failed: {exc}")
         yield (
@@ -481,14 +562,5 @@ async def stream_chatbot(
         return
 
     answer = "".join(chunks)
-
-    if history is not None and answer:
-        try:
-            await asyncio.to_thread(
-                history.add_messages,
-                [HumanMessage(content=message), AIMessage(content=answer)],
-            )
-        except Exception as exc:
-            print(f"Saving chat history failed: {exc}")
 
     yield ("done", {"text": answer})

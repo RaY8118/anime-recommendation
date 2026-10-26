@@ -1,19 +1,32 @@
 import logging
 import os
 import time
+from contextlib import asynccontextmanager
 
-from app.routers import animes, ping, watchlist
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+
+from app.routers import animes, ping, watchlist
+from app.utils import langbot
 
 load_dotenv()
 env = os.getenv("ENV", "DEVELOPMENT")
 raw_origins = os.getenv("ALLOWED_ORIGINS", "*")
 allowed_origins = [origin.strip() for origin in raw_origins.split(",")]
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    await langbot.setup_checkpointer()
+    try:
+        yield
+    finally:
+        await langbot.close_checkpointer()
+
+
+app = FastAPI(lifespan=lifespan)
 
 app.include_router(animes.router, prefix="/v1/animes", tags=["animes"])
 app.include_router(ping.router, prefix="/v1/ping", tags=["ping"])

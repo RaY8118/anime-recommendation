@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 2
 requires-python = "==3.12.3"
 
 [[package]]
@@ -119,6 +119,7 @@ dependencies = [
     { name = "langchain-openai" },
     { name = "langchain-openrouter" },
     { name = "langchain-qdrant" },
+    { name = "langgraph" },
     { name = "motor" },
     { name = "numpy" },
     { name = "openai" },
@@ -145,6 +146,7 @@ requires-dist = [
     { name = "langchain-openai", specifier = ">=1.6.2" },
     { name = "langchain-openrouter", specifier = ">=0.2.1" },
     { name = "langchain-qdrant", specifier = ">=1.1.0" },
+    { name = "langgraph", specifier = ">=1.0.5" },
     { name = "motor", specifier = ">=3.7.1" },
     { name = "numpy", specifier = ">=2.2.6" },
     { name = "openai", specifier = ">=2.14.0" },
