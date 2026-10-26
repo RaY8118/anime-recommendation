@@ -13,7 +13,7 @@ The Python service (`backend/app/`) serves the API and generates vector embeddin
 | `internal/config/` | Environment configuration and validation |
 | `internal/database/` | MongoDB connection (mongo-driver v2) and idempotent writes |
 | `internal/fetch/` | Walks ID range, drives the ingest loop, records skipped ranges |
-| `internal/models/` | Domain/wire types with explicit BSON tags; BSON contract tests |
+| `internal/models/` | Domain (`media.go`) and AniList wire (`anilist.go`) types with explicit BSON tags; BSON contract tests |
 | `internal/transform/` | AniList wire types → domain documents; HTML cleaning and normalization |
 
 ## Module Info

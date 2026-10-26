@@ -11,7 +11,8 @@ React/Vite frontend for NekoRec. It uses Auth0 for authentication, TanStack Quer
 - **React Router v7** — client-side routing
 - **Auth0 React SDK v2** (`@auth0/auth0-react`) — PKCE, localStorage cache, refresh tokens
 - **Axios** — HTTP client
-- **Framer Motion, React Icons, React Markdown** — UI/UX
+- **Framer Motion, React Icons, Headless UI, Heroicons, React Markdown** — UI/UX
+- **`@headlessui/react`**, **`@heroicons/react`** — accessible dropdowns / icon set
 - **ESLint 9** (flat config) + TypeScript ESLint + React Hooks rules
 
 ## Scripts
@@ -46,8 +47,10 @@ frontend/
 │   ├── assets/favicon.png
 │   ├── components/
 │   │   ├── AnimeCard.tsx
+│   │   ├── AnimeCardSkeleton.tsx
 │   │   ├── AnimeFilter.tsx
 │   │   ├── Chatbot.tsx
+│   │   ├── ChatAnimeCard.tsx
 │   │   ├── Error.tsx
 │   │   ├── Footer.tsx
 │   │   ├── GenreHighlights.tsx
@@ -79,7 +82,7 @@ frontend/
 
 ## API Layer
 
-`src/services/api.ts` creates an Axios instance with base URL `${import.meta.env.VITE_API_URL}/v1`. Exports: `pingServer`, `pingPrivateServer`, `getAllAnimes`, `getAnimeById`, `getRecommendations`, `getGenres`, `filterByGenre`, `searchAnime`, `suggestAnime`, `getRandomAnime`, `getTopRated`, `getChatbotModels`, `sendChatMessage`, `getWatchlist`, `addToWatchlist`, `getWatchlistItem`, `deleteFromWatchlist`, `updateWatchlistStatus`.
+`src/services/api.ts` creates an Axios instance with base URL `${import.meta.env.VITE_API_URL}/v1`. Exports: `pingServer`, `pingPrivateServer`, `getAllAnimes`, `getAnimeById`, `getRecommendations`, `getGenres`, `filterByGenre`, `searchAnime`, `suggestAnime`, `getRandomAnime`, `getTopRated`, `getChatbotModels`, `sendChatMessage`, `streamChatMessage` (SSE via `fetch` against `/chatbot/stream`, parsed server-sent events), `clearChatHistory`, `getWatchlist`, `addToWatchlist`, `getWatchlistItem`, `deleteFromWatchlist`, `updateWatchlistStatus`.
 
 ## Auth0 Configuration
 

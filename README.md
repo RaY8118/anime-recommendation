@@ -9,9 +9,9 @@ NekoRec is a full-stack anime recommendation web app. It lets users browse anime
 - 🏷️ **Genre Exploration** — Discover and filter anime by genre.
 - ❤️ **Content-Based Recommendations** — Get similar anime using vector embeddings of descriptions + metadata.
 - 💡 **Suggest Anime** — Submit anime suggestions via the API.
-- 💬 **AI Chatbot** — Multi-model assistant powered by OpenRouter (LangChain).
+- 💬 **AI Chatbot** — Multi-model RAG assistant built on LangGraph + OpenRouter, with SSE token streaming and Redis-backed session history.
 - 👤 **Watchlist** — Auth0-protected watchlist with add/view/update/delete/status.
-- 🧠 **Vector Search** — Embeddings generated from cleaned anime descriptions for similarity scoring.
+- 🧠 **Vector Search** — Embeddings generated from cleaned anime descriptions and stored in Qdrant for similarity scoring and metadata-filtered retrieval.
 
 ## 🛠️ Tech Stack
 
@@ -21,8 +21,10 @@ NekoRec is a full-stack anime recommendation web app. It lets users browse anime
 - **FastAPI** — High-performance async web framework.
 - **Uvicorn + Gunicorn** — ASGI server (production Docker image uses Gunicorn with Uvicorn workers).
 - **uv** — Fast Python package/lockfile manager (`uv.lock`).
-- **LangChain + LangChain-OpenRouter** — Multi-model chatbot orchestration.
-- **MongoDB (motor/pymongo)** — Stores anime metadata (`new_animes`) and embeddings (`embeddings`).
+- **LangChain / LangGraph + LangChain-OpenRouter** — Multi-model chatbot as a RAG pipeline (intent/condition extraction → Qdrant retrieval → LLM response), with SSE streaming.
+- **MongoDB (motor/pymongo)** — Stores anime metadata (`new_animes`) and the user watchlist.
+- **Qdrant Cloud (langchain-qdrant, qdrant-client)** — Vector database for embeddings (`anime` collection) powering recommendations and chatbot retrieval.
+- **Redis** — Stores chatbot conversation history with a TTL (`REDIS_HISTORY_TTL`).
 - **Auth0 (authlib)** — JWT validation for protected routes (watchlist, ping-private).
 - **OpenRouter** — Used for embeddings (`google/gemini-embedding-001`) and LLM chat models.
 - **AniList GraphQL API** — Source of truth for anime metadata.
@@ -40,13 +42,13 @@ NekoRec is a full-stack anime recommendation web app. It lets users browse anime
 - **React Router v7** — Client-side routing.
 - **Auth0 React SDK** — Authentication (PKCE, refresh tokens).
 - **Axios** — HTTP client for backend API.
-- **Framer Motion, React Icons, React Markdown** — UI polish and markdown rendering.
+- **Framer Motion, React Icons, Headless UI, Heroicons, React Markdown** — UI polish, accessible components, and markdown rendering.
 
 ## 🏗️ Architecture & Data Flow
 
 1. **Ingest**: `backend/go-fetcher` walks AniList IDs and upserts documents into MongoDB collection `new_animes` (database `anime_recommendation`). Documents use explicit BSON tags (`averageScore`, `seasonYear`) shared with the Python contract (validated by Go tests).
-2. **Embed**: Run embedding generation (e.g. `backend/app/utils/anime_embedding_generation.py`) to build vector embeddings from cleaned descriptions and populate the `embeddings` collection.
-3. **Serve**: FastAPI (`app.main:app`) exposes REST API under `/v1/*` (animes, chatbot, watchlist, ping). Recommendations use cosine similarity over stored embeddings.
+2. **Embed**: Run embedding generation (e.g. `backend/app/utils/anime_embedding_generation.py`) to build vector embeddings from cleaned descriptions and upsert them into the **Qdrant** collection `anime` (with payload indexes for genres, studios, status, season, score, popularity).
+3. **Serve**: FastAPI (`app.main:app`) exposes REST API under `/v1/*` (animes, chatbot, watchlist, ping). Recommendations use vector similarity via Qdrant (`app/services/anime_recommendations.py`); the chatbot is a LangGraph pipeline in `app/services/chatbot/` that extracts search constraints, queries Qdrant, and streams LLM responses over SSE.
 4. **UI**: React app calls the backend via Axios (`src/services/api.ts`) and uses Auth0 for authenticated watchlist actions.
 
 ## 🚦 Quick Start
@@ -127,6 +129,10 @@ python app/utils/anime_embedding_generation.py
 | `AUTH0_DOMAIN` | Yes (auth-protected routes) | — | e.g. `your-tenant.auth0.com` |
 | `AUTH0_API_AUDIENCE` | Yes | — | Auth0 API identifier/audience |
 | `OPENROUTER_API_KEY` | Yes | — | Used for Gemini embeddings + LLM chat |
+| `QDRANT_CLOUD_ENDPOINT` | Yes (recommendations/chatbot) | — | Qdrant Cloud cluster URL |
+| `QDRANT_CLOUD_API_KEY` | Yes (recommendations/chatbot) | — | Qdrant Cloud API key |
+| `REDIS_URL` | Yes (chatbot history) | — | Redis connection URL for chat session history |
+| `REDIS_HISTORY_TTL` | No | `86400` | Chat history TTL in seconds |
 | `ALLOWED_ORIGINS` | No | `*` | Comma-separated CORS origins |
 | `ENV` | No | `DEVELOPMENT` | `DEVELOPMENT`/`PRODUCTION` affects CORS/logging behavior |
 
@@ -163,7 +169,8 @@ The fetcher auto-loads `.env` from `./.env`, `../.env`, or `backend/.env`. See `
 │   │   ├── dependencies.py   # MongoDB clients, DB name
 │   │   ├── routers/          # animes.py, ping.py, watchlist.py
 │   │   ├── schemas/          # animes.py, watchlist.py (Pydantic)
-│   │   └── utils/            # embeddings, chatbot/langbot, anime_api, clean_text, auth0_security, ...
+│   │   ├── services/          # anime_recommendations.py (Qdrant similarity), chatbot/ (LangGraph RAG pipeline: graph, state, retrieval, chat, models, saver, config)
+│   │   └── utils/            # embeddings, qdrant_client, anime_api, clean_text, auth0_security, chatbot, fetch_status, validate_params, ...
 │   └── go-fetcher/           # Go AniList → MongoDB ingestor (cmd/, internal/, go.mod)
 └── frontend/
     ├── index.html
@@ -175,10 +182,10 @@ The fetcher auto-loads `.env` from `./.env`, `../.env`, or `backend/.env`. See `
     └── src/
         ├── main.tsx           # QueryClient + Auth0Provider
         ├── App.tsx            # Routes, health ping, global Chatbot
-        ├── components/        # Navbar, AnimeCard, Chatbot, Loader, etc.
+        ├── components/        # Navbar, AnimeCard/Skeleton, Chatbot, ChatAnimeCard, ThemeToggle, Loader, etc.
         ├── pages/             # Home, Browse, AnimeDetails, Recommendations, Genres, Suggest, Watchlist
         ├── hooks/             # useMediaQuery, newDebounce
-        ├── services/api.ts    # Centralized axios calls to /v1/*
+        ├── services/api.ts    # Centralized axios calls to /v1/* (chat streaming via fetch + SSE)
         └── types/             # anime.ts, watchlist.ts
 ```
 
