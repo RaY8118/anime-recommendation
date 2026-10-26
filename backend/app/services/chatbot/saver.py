@@ -17,6 +17,7 @@ methods deliberately fall back to the base-class NotImplementedError.
 
 from __future__ import annotations
 
+import asyncio
 import warnings
 from collections.abc import AsyncIterator, Iterator, Sequence
 from typing import Any
@@ -37,6 +38,8 @@ with warnings.catch_warnings():
         PendingWrite,
         V,
     )
+
+from app.services.chatbot.config import REDIS_HISTORY_TTL, REDIS_URL
 
 DEFAULT_PREFIX = "kgckpt"
 
@@ -279,3 +282,56 @@ class AsyncRedisLiteSaver(BaseCheckpointSaver[V]):
 
     def delete_thread(self, thread_id: str) -> None:
         raise NotImplementedError("Use adelete_thread (async-only saver)")
+
+
+# -- checkpointer lifecycle ---------------------------------------------------
+
+_checkpointer: AsyncRedisLiteSaver | None = None
+_checkpointer_ready = False
+_checkpointer_lock = asyncio.Lock()
+
+
+async def get_checkpointer() -> AsyncRedisLiteSaver:
+    global _checkpointer, _checkpointer_ready
+
+    if _checkpointer is not None and _checkpointer_ready:
+        return _checkpointer
+
+    async with _checkpointer_lock:
+        if _checkpointer is None:
+            if not REDIS_URL:
+                raise RuntimeError("REDIS_URL is not configured")
+            _checkpointer = AsyncRedisLiteSaver(
+                redis_url=REDIS_URL,
+                ttl_seconds=REDIS_HISTORY_TTL,
+            )
+        if not _checkpointer_ready:
+            await _checkpointer.asetup()
+            _checkpointer_ready = True
+
+    return _checkpointer
+
+
+async def setup_checkpointer() -> None:
+    await get_checkpointer()
+
+
+async def close_checkpointer() -> None:
+    global _checkpointer, _checkpointer_ready
+
+    async with _checkpointer_lock:
+        if _checkpointer is not None:
+            try:
+                await _checkpointer.close()
+            except Exception as exc:
+                print(f"Closing Redis checkpointer failed: {exc}")
+        _checkpointer = None
+        _checkpointer_ready = False
+
+
+async def clear_chat_history(session_id: str) -> None:
+    try:
+        checkpointer = await get_checkpointer()
+        await checkpointer.adelete_thread(session_id)
+    except Exception as exc:
+        print(f"Clearing chat history failed: {exc}")

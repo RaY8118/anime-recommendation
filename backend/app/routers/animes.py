@@ -23,10 +23,14 @@ from app.services.anime_recommendations import (
     retrieve_by_genre,
     retrieve_by_name,
 )
+from app.services.chatbot import (
+    clear_chat_history,
+    langchain_chatbot,
+    stream_chatbot,
+)
 from app.utils.anime_api import get_anime
 from app.utils.anime_embedding_generation import generate_anime_embeddings
 from app.utils.fetch_status import get_current_page, update_current_page
-from app.utils.langbot import clear_chat_history, langchain_chatbot, stream_chatbot
 from app.utils.validate_params import validate_query_params
 
 router = APIRouter()

@@ -9,7 +9,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.routers import animes, ping, watchlist
-from app.utils import langbot
+from app.services.chatbot import (
+    close_checkpointer,
+    setup_checkpointer,
+)
 
 load_dotenv()
 env = os.getenv("ENV", "DEVELOPMENT")
@@ -19,11 +22,11 @@ allowed_origins = [origin.strip() for origin in raw_origins.split(",")]
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    await langbot.setup_checkpointer()
+    await setup_checkpointer()
     try:
         yield
     finally:
-        await langbot.close_checkpointer()
+        await close_checkpointer()
 
 
 app = FastAPI(lifespan=lifespan)
