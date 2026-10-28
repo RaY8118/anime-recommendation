@@ -1,7 +1,7 @@
 import asyncio
 
 import httpx
-from app.dependencies import get_database
+from app.core.deps import get_database
 from app.schemas.animes import Anime
 from app.utils.clean_text import clean_html
 from app.utils.embeddings import generate_embeddings

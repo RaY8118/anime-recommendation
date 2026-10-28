@@ -1,23 +1,20 @@
 import logging
-import os
 import time
 from contextlib import asynccontextmanager
 
-from dotenv import load_dotenv
+from app.core.config import get_settings
+from app.routers import animes, chatbot, ping, recommendations, watchlist
+from app.services.chatbot import close_checkpointer, setup_checkpointer
 from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.routers import animes, ping, watchlist
-from app.services.chatbot import (
-    close_checkpointer,
-    setup_checkpointer,
-)
+settings = get_settings()
 
-load_dotenv()
-env = os.getenv("ENV", "DEVELOPMENT")
-raw_origins = os.getenv("ALLOWED_ORIGINS", "*")
-allowed_origins = [origin.strip() for origin in raw_origins.split(",")]
+env = settings.env
+allowed_origins = settings.origins_list
 
 
 @asynccontextmanager
@@ -32,6 +29,8 @@ async def lifespan(_: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 app.include_router(animes.router, prefix="/v1/animes", tags=["animes"])
+app.include_router(recommendations.router, prefix="/v1/animes", tags=["recommendations"])
+app.include_router(chatbot.router, prefix="/v1/animes", tags=["chatbot"])
 app.include_router(ping.router, prefix="/v1/ping", tags=["ping"])
 app.include_router(watchlist.router, prefix="/v1/watchlist", tags=["watchlist"])
 
@@ -69,10 +68,17 @@ async def log_request_time(request: Request, call_next):
     return response
 
 
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    return JSONResponse(status_code=exc.status_code, content={"message": exc.detail})
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return JSONResponse(status_code=422, content={"message": "Validation error", "details": exc.errors()})
+
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    return JSONResponse(status_code=500, content={"message": str(exc)})
-
-
-async def global_exception_handler(request: Request, exc: Exception):
-    return JSONResponse(status_code=500, content={"message": str(exc)})
+    # Log the exception here if needed
+    return JSONResponse(status_code=500, content={"message": "Internal server error"})

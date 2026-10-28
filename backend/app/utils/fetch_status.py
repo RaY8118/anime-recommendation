@@ -1,4 +1,4 @@
-from app.dependencies import get_database
+from app.core.deps import get_database
 from fastapi import Depends
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
