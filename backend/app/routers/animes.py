@@ -1,37 +1,19 @@
-import json
 import random
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
-from fastapi.responses import StreamingResponse
-from motor.motor_asyncio import AsyncIOMotorDatabase
-
-from app.dependencies import get_database
+from app.core.deps import get_database
+from app.core.fetch_status import get_current_page, update_current_page
+from app.core.validate import validate_query_params
 from app.schemas.animes import (
-    AVAILABLE_MODELS,
     AnimeListResponse,
     AnimeResponse,
     AnimesListResponse,
-    ChatBotRequest,
-    ChatBotResponse,
-    ClearChatHistoryRequest,
     GenresResponse,
     MessageResponse,
-    QueryMode,
 )
-from app.services.anime_recommendations import (
-    retrieve_by_description,
-    retrieve_by_genre,
-    retrieve_by_name,
-)
-from app.services.chatbot import (
-    clear_chat_history,
-    langchain_chatbot,
-    stream_chatbot,
-)
-from app.utils.anime_api import get_anime
-from app.utils.anime_embedding_generation import generate_anime_embeddings
-from app.utils.fetch_status import get_current_page, update_current_page
-from app.utils.validate_params import validate_query_params
+from app.services.embeddings.generate import generate_anime_embeddings
+from app.services.ingest.anilist import get_anime
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from motor.motor_asyncio import AsyncIOMotorDatabase
 
 router = APIRouter()
 
@@ -51,45 +33,6 @@ ANIME_PROJECTION = {
     "studios": 1,
     "coverImage": 1,
 }
-
-
-@router.post(
-    "/fetch", response_model=MessageResponse, status_code=status.HTTP_201_CREATED
-)
-async def fetch_animes(request: Request, perPage: int = 1):
-    validate_query_params(request, {"perPage"})
-    page = await get_current_page()
-    result = await get_anime(page, perPage)
-
-    if result.get("status") != "success":
-        raise HTTPException(
-            status_code=500, detail=result.get("error") or "Failed to fetch animes"
-        )
-
-    await update_current_page(page + 1)
-    return {"message": f"{result.get('inserted_ids')} animes inserted successfully"}
-
-
-@router.post("/recommendations", response_model=AnimeListResponse)
-async def recommend_anime(
-    request: Request,
-    query: str,
-    mode: QueryMode = QueryMode.description,
-    top_k: int = 5,
-    db: AsyncIOMotorDatabase = Depends(get_database),
-):
-    validate_query_params(request, {"query", "mode", "top_k"})
-    if mode == QueryMode.anime_name:
-        results = await retrieve_by_name(query, db, top_k)
-    elif mode == QueryMode.genre:
-        results = await retrieve_by_genre(query, db, top_k)
-    else:
-        results = await retrieve_by_description(query, db, top_k)
-
-    if not results:
-        raise HTTPException(status_code=404, detail="No similar animes found")
-
-    return AnimeListResponse(results=results)
 
 
 @router.get("", response_model=AnimesListResponse)
@@ -157,13 +100,30 @@ async def get_animes(
 
 
 @router.post(
+    "/fetch", response_model=MessageResponse, status_code=status.HTTP_201_CREATED
+)
+async def fetch_animes(request: Request, perPage: int = 1):
+    validate_query_params(request, {"perPage"})
+    page = await get_current_page()
+    result = await get_anime(page, perPage)
+
+    if result.get("status") != "success":
+        raise HTTPException(
+            status_code=500, detail=result.get("error") or "Failed to fetch animes"
+        )
+
+    await update_current_page(page + 1)
+    return {"message": f"{result.get('inserted_ids')} animes inserted successfully"}
+
+
+@router.post(
     "/suggestions", response_model=MessageResponse, status_code=status.HTTP_201_CREATED
 )
 async def suggest_anime(
     anime_name: str, db: AsyncIOMotorDatabase = Depends(get_database)
 ):
     if not anime_name:
-        raise HTTPException(status_code=400, detail="Anime name is required")
+        raise BadRequestException(detail="Anime name is required")
     anime_collection = db.new_animes
     suggestions_collection = db.suggestions
 
@@ -206,12 +166,14 @@ async def search_anime(query: str, db: AsyncIOMotorDatabase = Depends(get_databa
             ]
         },
         ANIME_PROJECTION,
-    ).limit(20)  # Limit search results for performance
+    ).limit(
+        20
+    )  # Limit search results for performance
 
     results = [anime async for anime in cursor]
 
     if not results:
-        raise HTTPException(status_code=404, detail="No animes found")
+        raise AnimeNotFoundException(detail="No animes found")
 
     return {"results": results}
 
@@ -237,7 +199,7 @@ async def filter_anime_by_genre(
     results = [anime async for anime in cursor]
 
     if not results:
-        raise HTTPException(status_code=404, detail="No animes found for the genre")
+        raise AnimeNotFoundException(detail="No animes found for the genre")
 
     return {"results": results}
 
@@ -248,7 +210,7 @@ async def get_random_anime(db: AsyncIOMotorDatabase = Depends(get_database)):
     count = await anime_collection.count_documents({})
 
     if count == 0:
-        raise HTTPException(status_code=404, detail="No animes found")
+        raise AnimeNotFoundException(detail="No animes found")
 
     random_index = random.randint(0, count - 1)
     anime = (
@@ -276,7 +238,7 @@ async def top_rated_anime(
     results = [anime async for anime in cursor]
 
     if not results:
-        raise HTTPException(status_code=404, detail="No animes found")
+        raise AnimeNotFoundException(detail="No animes found")
 
     return {"results": results}
 
@@ -296,78 +258,9 @@ async def get_anime_by_id(id: int, db: AsyncIOMotorDatabase = Depends(get_databa
     anime_collection = db.new_animes
     anime = await anime_collection.find_one({"id": id})
     if not anime:
-        raise HTTPException(status_code=404, detail="Anime not found")
+        raise AnimeNotFoundException(detail="Anime not found")
 
     anime.pop("_id", None)
     anime.pop("embedding", None)
 
     return {"anime": anime}
-
-
-@router.get("/chatbot/models")
-async def get_chatbot_models():
-    return {"models": AVAILABLE_MODELS}
-
-
-@router.post("/chatbot", response_model=ChatBotResponse)
-async def Chatbot(
-    request: ChatBotRequest, db: AsyncIOMotorDatabase = Depends(get_database)
-):
-    try:
-        results = await langchain_chatbot(
-            request.message,
-            request.model_id,
-            db,
-            session_id=request.session_id or "default",
-        )
-    except Exception as exc:
-        raise HTTPException(
-            status_code=503, detail=f"Chatbot is unavailable: {exc}"
-        ) from exc
-
-    if not results:
-        raise HTTPException(status_code=404, detail="No results found")
-    return {"results": results}
-
-
-@router.post("/chatbot/stream")
-async def StreamChatbot(
-    request: ChatBotRequest, db: AsyncIOMotorDatabase = Depends(get_database)
-):
-    async def event_generator():
-        try:
-            async for event, data in stream_chatbot(
-                request.message,
-                request.model_id,
-                db,
-                session_id=request.session_id or "default",
-            ):
-                yield f"event: {event}\ndata: {json.dumps(data)}\n\n"
-        except Exception as exc:
-            print(f"Streaming chatbot failed: {exc}")
-            yield (
-                "event: error\n"
-                f"data: {json.dumps({'message': 'Something went wrong. Please try again.'})}\n\n"
-            )
-
-    return StreamingResponse(
-        event_generator(),
-        media_type="text/event-stream",
-        headers={
-            "Cache-Control": "no-cache",
-            "Connection": "keep-alive",
-            "X-Accel-Buffering": "no",
-        },
-    )
-
-
-@router.post("/chatbot/clear", response_model=MessageResponse)
-async def clear_chatbot(request: ClearChatHistoryRequest):
-    try:
-        await clear_chat_history(request.session_id)
-    except Exception as exc:
-        raise HTTPException(
-            status_code=503, detail=f"Failed to clear chat history: {exc}"
-        ) from exc
-
-    return {"message": "Chat history cleared"}

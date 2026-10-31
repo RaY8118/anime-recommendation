@@ -1,12 +1,7 @@
+from app.core.qdrant import client, embeddings
 from fastapi import HTTPException
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from qdrant_client.http.models import (
-    FieldCondition,
-    Filter,
-    MatchValue,
-)
-
-from app.utils.qdrant_client import client, embeddings
+from qdrant_client.http.models import FieldCondition, Filter, MatchValue
 
 
 async def _get_animes_by_ids(
