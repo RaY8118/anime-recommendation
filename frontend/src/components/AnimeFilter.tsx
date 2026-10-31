@@ -1,14 +1,17 @@
 import { useEffect, useState } from "react";
+import { useSfw } from "../context/SfwContext";
+import { isAdultGenre } from "../lib/sfw";
 import { getGenres } from "../services/api";
 import type { AnimeFiltersProps } from "../types/anime";
 
 export const AnimeFilters = ({ filters, setFilters }: AnimeFiltersProps) => {
+  const { isSfw } = useSfw();
   const [genres, setGenres] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchGenres = async () => {
       try {
-        const response = await getGenres();
+        const response = await getGenres(isSfw);
         setGenres(response.data.genres);
       } catch (error) {
         console.error("Error fetching genres:", error);
@@ -16,7 +19,13 @@ export const AnimeFilters = ({ filters, setFilters }: AnimeFiltersProps) => {
     };
 
     fetchGenres();
-  }, []);
+  }, [isSfw]);
+
+  useEffect(() => {
+    if (isSfw && isAdultGenre(filters.selectedGenre)) {
+      setFilters((prev) => ({ ...prev, selectedGenre: undefined }));
+    }
+  }, [isSfw, filters.selectedGenre, setFilters]);
 
   const handleClearFilters = () => {
     setFilters({

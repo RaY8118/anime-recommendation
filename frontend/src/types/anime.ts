@@ -43,6 +43,7 @@ export type AnimeOut = {
   source?: string;
   studios: Array<string>;
   coverImage?: CoverImage;
+  isAdult?: boolean;
 };
 
 export type AnimeResponse = {
@@ -92,6 +93,7 @@ export type RecommendationsParams = {
   query: string;
   mode: QueryMode;
   top_k: number;
+  sfw?: boolean;
 };
 
 export type Filters = {

@@ -1,4 +1,9 @@
 from app.core.qdrant import client, embeddings
+from app.core.sfw import (
+    apply_sfw_mongo_filter,
+    is_adult_content,
+    merge_sfw_qdrant_filter,
+)
 from fastapi import HTTPException
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from qdrant_client.http.models import FieldCondition, Filter, MatchValue
@@ -8,13 +13,15 @@ async def _get_animes_by_ids(
     db: AsyncIOMotorDatabase,
     ids: list[int],
     projection: dict | None = None,
+    sfw: bool = True,
 ) -> list[dict]:
     if not ids:
         return []
 
     projection = projection or {"_id": 0}
 
-    cursor = db.new_animes.find({"id": {"$in": ids}}, projection)
+    mongo_query = apply_sfw_mongo_filter({"id": {"$in": ids}}, sfw)
+    cursor = db.new_animes.find(mongo_query, projection)
     anime_list = await cursor.to_list(length=len(ids))
 
     anime_by_id = {anime["id"]: anime for anime in anime_list}
@@ -23,7 +30,7 @@ async def _get_animes_by_ids(
 
 
 async def retrieve_by_name(
-    query: str, db: AsyncIOMotorDatabase, top_k: int = 5
+    query: str, db: AsyncIOMotorDatabase, top_k: int = 5, sfw: bool = True
 ) -> list[dict]:
     anime_collection = db.new_animes
 
@@ -37,6 +44,9 @@ async def retrieve_by_name(
     )
 
     if not anime:
+        raise HTTPException(status_code=404, detail="Anime not found")
+
+    if sfw and is_adult_content(anime.get("genres")):
         raise HTTPException(status_code=404, detail="Anime not found")
 
     anime_id = anime["id"]
@@ -63,12 +73,15 @@ async def retrieve_by_name(
         query=embedding,
         limit=top_k + 1,
         with_payload=True,
-        query_filter=Filter(
-            must_not=[
-                FieldCondition(
-                    key="metadata.anime_id", match=MatchValue(value=anime_id)
-                )
-            ]
+        query_filter=merge_sfw_qdrant_filter(
+            Filter(
+                must_not=[
+                    FieldCondition(
+                        key="metadata.anime_id", match=MatchValue(value=anime_id)
+                    )
+                ]
+            ),
+            sfw,
         ),
     ).points
 
@@ -82,17 +95,20 @@ async def retrieve_by_name(
         aid = metadata.get("anime_id") or point.id
         recommended_ids.append(aid)
 
-    return await _get_animes_by_ids(db, recommended_ids[:top_k])
+    return await _get_animes_by_ids(db, recommended_ids[:top_k], sfw=sfw)
 
 
 async def retrieve_by_genre(
-    query: str, db: AsyncIOMotorDatabase, top_k: int = 5
+    query: str, db: AsyncIOMotorDatabase, top_k: int = 5, sfw: bool = True
 ) -> list[dict]:
     genres = [
         genre.strip().title() for genre in (query or "").split(",") if genre.strip()
     ]
 
     if not genres:
+        return []
+
+    if sfw and any(is_adult_content([genre]) for genre in genres):
         return []
 
     genre_filter = Filter(
@@ -104,7 +120,7 @@ async def retrieve_by_genre(
 
     points, _ = client.scroll(
         collection_name="anime",
-        scroll_filter=genre_filter,
+        scroll_filter=merge_sfw_qdrant_filter(genre_filter, sfw),
         limit=top_k,
         with_payload=True,
         with_vectors=False,
@@ -123,11 +139,11 @@ async def retrieve_by_genre(
             seen.add(aid)
             anime_ids.append(aid)
 
-    return await _get_animes_by_ids(db, anime_ids[:top_k])
+    return await _get_animes_by_ids(db, anime_ids[:top_k], sfw=sfw)
 
 
 async def retrieve_by_description(
-    query: str, db: AsyncIOMotorDatabase, top_k: int = 5
+    query: str, db: AsyncIOMotorDatabase, top_k: int = 5, sfw: bool = True
 ) -> list[dict]:
     description = (query or "").strip()
 
@@ -142,6 +158,7 @@ async def retrieve_by_description(
         limit=top_k,
         with_payload=True,
         with_vectors=False,
+        query_filter=merge_sfw_qdrant_filter(None, sfw),
     ).points
 
     if not points:
@@ -157,4 +174,4 @@ async def retrieve_by_description(
             seen.add(aid)
             anime_ids.append(aid)
 
-    return await _get_animes_by_ids(db, anime_ids[:top_k])
+    return await _get_animes_by_ids(db, anime_ids[:top_k], sfw=sfw)

@@ -20,15 +20,16 @@ async def recommend_anime(
     query: str,
     mode: QueryMode = QueryMode.description,
     top_k: int = 5,
+    sfw: bool = Query(True),
     db: AsyncIOMotorDatabase = Depends(get_database),
 ):
-    validate_query_params(request, {"query", "mode", "top_k"})
+    validate_query_params(request, {"query", "mode", "top_k", "sfw"})
     if mode == QueryMode.anime_name:
-        results = await retrieve_by_name(query, db, top_k)
+        results = await retrieve_by_name(query, db, top_k, sfw)
     elif mode == QueryMode.genre:
-        results = await retrieve_by_genre(query, db, top_k)
+        results = await retrieve_by_genre(query, db, top_k, sfw)
     else:
-        results = await retrieve_by_description(query, db, top_k)
+        results = await retrieve_by_description(query, db, top_k, sfw)
 
     if not results:
         raise AnimeNotFoundException(detail="No similar animes found")

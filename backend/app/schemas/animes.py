@@ -42,6 +42,7 @@ class Anime(BaseModel):
     source: str | None = None
     studios: list[str] | None = Field(default_factory=list)
     coverImage: CoverImage | None = None
+    isAdult: bool | None = None
     embedding: list[float] | None = Field(default_factory=list)
 
 
@@ -59,6 +60,7 @@ class AnimeOut(BaseModel):
     source: str | None = None
     studios: list[str] | None = Field(default_factory=list)
     coverImage: CoverImage | None = None
+    isAdult: bool | None = None
 
 
 class AnimeResponse(BaseModel):

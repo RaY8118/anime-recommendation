@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
+import { SfwProvider } from "./context/SfwProvider.tsx";
 import "./index.css";
 
 const queryClient = new QueryClient();
@@ -24,7 +25,9 @@ createRoot(document.getElementById("root")!).render(
         cacheLocation="localstorage"
         useRefreshTokens={true}
       >
-        <App />
+        <SfwProvider>
+          <App />
+        </SfwProvider>
       </Auth0Provider>
     </QueryClientProvider>
   </StrictMode>

@@ -7,12 +7,14 @@ import { Error } from "../components/Error";
 import { getAllAnimes } from "../services/api";
 
 import { useDebounce } from "../hooks/newDebounce";
+import { useSfw } from "../context/SfwContext";
 import type { AnimeOut, Filters } from "../types/anime";
 
 const itemsPerPage = 12;
 const chunkSize = itemsPerPage * 3;
 
 const Browse = () => {
+  const { isSfw } = useSfw();
   const [filters, setFilters] = useState<Filters>({
     searchQuery: "",
   });
@@ -25,10 +27,10 @@ const Browse = () => {
   useEffect(() => {
     setCurrentChunkPage(1);
     setCurrentDisplayPage(1);
-  }, [debouncedFilters]);
+  }, [debouncedFilters, isSfw]);
 
   const { data, isLoading, isError, error, isFetching } = useQuery({
-    queryKey: ["allAnime", currentChunkPage, debouncedFilters],
+    queryKey: ["allAnime", currentChunkPage, debouncedFilters, isSfw],
     queryFn: () =>
       getAllAnimes(currentChunkPage, chunkSize, {
         genre: debouncedFilters.selectedGenre,
@@ -37,6 +39,7 @@ const Browse = () => {
         season: debouncedFilters.season,
         year: debouncedFilters.year,
         query: debouncedFilters.searchQuery,
+        sfw: isSfw,
       }),
     staleTime: 1000 * 60 * 5,
   });

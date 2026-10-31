@@ -2,6 +2,7 @@ import asyncio
 
 from app.core.embeddings import embeddings
 from app.core.qdrant import COLLECTION_NAME, client
+from app.core.sfw import merge_sfw_qdrant_filter
 from app.services.anime_recommendations import _get_animes_by_ids
 from app.services.chatbot.config import (
     EXTRACTION_INSTRUCTION,
@@ -126,6 +127,7 @@ async def retrieve_anime_context(
     filters: Filter | None = None,
     top_k: int = RETRIEVAL_TOP_K,
     candidates: int = RETRIEVAL_CANDIDATES,
+    sfw: bool = True,
 ) -> list[Document]:
     text = (query or "").strip()
     if not text:
@@ -138,12 +140,18 @@ async def retrieve_anime_context(
         return []
 
     points = await asyncio.to_thread(
-        _query_qdrant, query_embedding, filters, candidates
+        _query_qdrant,
+        query_embedding,
+        merge_sfw_qdrant_filter(filters, sfw),
+        candidates,
     )
 
     if not points and filters is not None:
         points = await asyncio.to_thread(
-            _query_qdrant, query_embedding, None, candidates
+            _query_qdrant,
+            query_embedding,
+            merge_sfw_qdrant_filter(None, sfw),
+            candidates,
         )
 
     if not points:
@@ -160,7 +168,7 @@ async def retrieve_anime_context(
             anime_ids.append(aid)
 
     try:
-        animes = await _get_animes_by_ids(db, anime_ids[:top_k])
+        animes = await _get_animes_by_ids(db, anime_ids[:top_k], sfw=sfw)
     except Exception as exc:
         print(f"Fetching anime details failed: {exc}")
         return []
@@ -175,11 +183,14 @@ async def retrieve_anime_context(
 
 
 async def safe_retrieve_anime_context(
-    query: str, db: AsyncIOMotorDatabase, filters: Filter | None = None
+    query: str,
+    db: AsyncIOMotorDatabase,
+    filters: Filter | None = None,
+    sfw: bool = True,
 ) -> list[Document]:
     try:
         return await asyncio.wait_for(
-            retrieve_anime_context(query, db, filters),
+            retrieve_anime_context(query, db, filters, sfw=sfw),
             timeout=RETRIEVAL_TIMEOUT_SECONDS,
         )
     except Exception as exc:

@@ -8,10 +8,14 @@ from app.services.chatbot.graph import _build_session_graph
 
 
 async def langchain_chatbot(
-    message: str, model_id: str, db: AsyncIOMotorDatabase, session_id: str = "default"
+    message: str,
+    model_id: str,
+    db: AsyncIOMotorDatabase,
+    session_id: str = "default",
+    sfw: bool = True,
 ) -> str:
     try:
-        graph = await _build_session_graph(db, model_id)
+        graph = await _build_session_graph(db, model_id, sfw)
         result = await asyncio.wait_for(
             graph.ainvoke(
                 {"messages": [HumanMessage(content=message)]},
@@ -32,12 +36,16 @@ async def langchain_chatbot(
 
 
 async def stream_chatbot(
-    message: str, model_id: str, db: AsyncIOMotorDatabase, session_id: str = "default"
+    message: str,
+    model_id: str,
+    db: AsyncIOMotorDatabase,
+    session_id: str = "default",
+    sfw: bool = True,
 ):
     yield ("status", {"stage": "thinking"})
 
     try:
-        graph = await _build_session_graph(db, model_id)
+        graph = await _build_session_graph(db, model_id, sfw)
     except Exception as exc:
         print(f"Loading chat history failed: {exc}")
         yield (

@@ -33,6 +33,7 @@ async def Chatbot(
             request.model_id,
             db,
             session_id=request.session_id or "default",
+            sfw=request.sfw,
         )
     except Exception as exc:
         raise HTTPException(
@@ -55,6 +56,7 @@ async def StreamChatbot(
                 request.model_id,
                 db,
                 session_id=request.session_id or "default",
+                sfw=request.sfw,
             ):
                 yield f"event: {event}\ndata: {json.dumps(data)}\n\n"
         except Exception as exc:

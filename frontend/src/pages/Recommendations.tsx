@@ -3,6 +3,7 @@ import { useState, type FormEvent, useEffect } from "react";
 import { AnimeCard } from "../components/AnimeCard";
 import { CardGridSkeleton } from "../components/AnimeCardSkeleton";
 import { Error } from "../components/Error";
+import { useSfw } from "../context/SfwContext";
 import { getRecommendations } from "../services/api";
 import {
   QueryMode,
@@ -22,6 +23,7 @@ interface RecommendationsState {
 }
 
 const Recommendations = () => {
+  const { isSfw } = useSfw();
   const [query, setQuery] = useState("");
   const [mode, setMode] = useState<QueryMode>(QueryMode.description);
   const [topK, setTopK] = useState(5);
@@ -41,14 +43,19 @@ const Recommendations = () => {
       setSubmittedParams(submittedParams);
       // Pre-populate react-query cache if data exists
       if (data) {
-        queryClient.setQueryData(["recommendations", submittedParams], data);
+        queryClient.setQueryData(
+          ["recommendations", submittedParams, isSfw],
+          data
+        );
       }
     }
+    // Restore once on mount; re-running on SFW changes would reset user input.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["recommendations", submittedParams],
-    queryFn: () => getRecommendations(submittedParams!),
+    queryKey: ["recommendations", submittedParams, isSfw],
+    queryFn: () => getRecommendations({ ...submittedParams!, sfw: isSfw }),
     enabled: !!submittedParams,
   });
 
@@ -75,6 +82,7 @@ const Recommendations = () => {
       query,
       mode,
       top_k: topK,
+      sfw: isSfw,
     };
     setSubmittedParams(newSubmittedParams);
   };

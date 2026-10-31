@@ -10,6 +10,8 @@ import {
   IoTrashOutline,
 } from "react-icons/io5";
 import ReactMarkdown from "react-markdown";
+import { useSfw } from "../context/SfwContext";
+import { isAdultAnime } from "../lib/sfw";
 import {
   clearChatHistory,
   getChatbotModels,
@@ -79,8 +81,12 @@ const BotAvatar = () => (
 
 const AnimeSources = ({ anime }: { anime: ChatAnime[] }) => {
   const [expanded, setExpanded] = useState(false);
+  const { isSfw } = useSfw();
+  const visibleAnime = isSfw
+    ? anime.filter((item) => !isAdultAnime(item.genres))
+    : anime;
 
-  if (anime.length === 0) return null;
+  if (visibleAnime.length === 0) return null;
 
   return (
     <div className="w-full">
@@ -95,7 +101,7 @@ const AnimeSources = ({ anime }: { anime: ChatAnime[] }) => {
         )}
         {expanded
           ? "Hide suggestions"
-          : `Show ${anime.length} suggestion${anime.length > 1 ? "s" : ""}`}
+          : `Show ${visibleAnime.length} suggestion${visibleAnime.length > 1 ? "s" : ""}`}
       </button>
 
       <AnimatePresence initial={false}>
@@ -108,7 +114,7 @@ const AnimeSources = ({ anime }: { anime: ChatAnime[] }) => {
             className="overflow-hidden"
           >
             <div className="flex w-full flex-col gap-2 pt-2">
-              {anime.map((item, i) => (
+              {visibleAnime.map((item, i) => (
                 <ChatAnimeCard
                   key={`${item.id ?? item.title}-${i}`}
                   anime={item}
@@ -189,6 +195,7 @@ const MessageRow = ({
 };
 
 const ChatbotUi = () => {
+  const { isSfw } = useSfw();
   const [messages, setMessages] = useState<ChatMessage[]>([WELCOME_MESSAGE]);
   const [input, setInput] = useState("");
   const [isOpen, setIsOpen] = useState(false);
@@ -271,7 +278,7 @@ const ChatbotUi = () => {
     armWatchdog();
 
     try {
-      await streamChatMessage(text, selectedModel, sessionId, {
+      await streamChatMessage(text, selectedModel, sessionId, isSfw, {
         signal: controller.signal,
         onStatus: (stage) => {
           setStatus(stage);

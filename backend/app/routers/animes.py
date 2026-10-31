@@ -2,6 +2,7 @@ import random
 
 from app.core.deps import get_database
 from app.core.fetch_status import get_current_page, update_current_page
+from app.core.sfw import apply_sfw_mongo_filter, is_adult_content
 from app.core.validate import validate_query_params
 from app.schemas.animes import (
     AnimeListResponse,
@@ -32,6 +33,7 @@ ANIME_PROJECTION = {
     "source": 1,
     "studios": 1,
     "coverImage": 1,
+    "isAdult": 1,
 }
 
 
@@ -45,6 +47,7 @@ async def get_animes(
     season: str | None = Query(None),
     year: int | None = Query(None),
     query: str | None = Query(None),
+    sfw: bool = Query(True),
     db: AsyncIOMotorDatabase = Depends(get_database),
 ):
     skip = (page - 1) * per_page
@@ -73,6 +76,8 @@ async def get_animes(
             {"title.romaji": {"$regex": query, "$options": "i"}},
             {"title.english": {"$regex": query, "$options": "i"}},
         ]
+
+    mongo_query = apply_sfw_mongo_filter(mongo_query, sfw)
 
     total = await anime_collection.count_documents(mongo_query)
     cursor = (
@@ -146,17 +151,25 @@ async def suggest_anime(
 
 
 @router.get("/genres", response_model=GenresResponse)
-async def get_genres(db: AsyncIOMotorDatabase = Depends(get_database)):
+async def get_genres(
+    sfw: bool = Query(True), db: AsyncIOMotorDatabase = Depends(get_database)
+):
     anime_collection = db.new_animes
     genres = await anime_collection.distinct("genres")
+    if sfw:
+        genres = [genre for genre in genres if not is_adult_content([genre])]
     return {"genres": genres}
 
 
 @router.get("/search", response_model=AnimeListResponse)
-async def search_anime(query: str, db: AsyncIOMotorDatabase = Depends(get_database)):
+async def search_anime(
+    query: str,
+    sfw: bool = Query(True),
+    db: AsyncIOMotorDatabase = Depends(get_database),
+):
     anime_collection = db.new_animes
     # Optimization: Use indexed search if available, and projection to limit fields
-    cursor = anime_collection.find(
+    mongo_query = apply_sfw_mongo_filter(
         {
             "$or": [
                 {
@@ -165,8 +178,9 @@ async def search_anime(query: str, db: AsyncIOMotorDatabase = Depends(get_databa
                 {"title.english": {"$regex": f"^{query}", "$options": "i"}},
             ]
         },
-        ANIME_PROJECTION,
-    ).limit(
+        sfw,
+    )
+    cursor = anime_collection.find(mongo_query, ANIME_PROJECTION).limit(
         20
     )  # Limit search results for performance
 
@@ -183,17 +197,17 @@ async def filter_anime_by_genre(
     genre: str,
     limit: int = 10,
     page: int = 1,
+    sfw: bool = Query(True),
     db: AsyncIOMotorDatabase = Depends(get_database),
 ):
     skip = (page - 1) * limit
     anime_collection = db.new_animes
+    mongo_query = apply_sfw_mongo_filter(
+        {"genres": {"$elemMatch": {"$regex": f"^{genre}$", "$options": "i"}}},
+        sfw,
+    )
     cursor = (
-        anime_collection.find(
-            {"genres": {"$elemMatch": {"$regex": f"^{genre}$", "$options": "i"}}},
-            ANIME_PROJECTION,
-        )
-        .skip(skip)
-        .limit(limit)
+        anime_collection.find(mongo_query, ANIME_PROJECTION).skip(skip).limit(limit)
     )
 
     results = [anime async for anime in cursor]
@@ -205,16 +219,19 @@ async def filter_anime_by_genre(
 
 
 @router.get("/random", response_model=AnimeResponse)
-async def get_random_anime(db: AsyncIOMotorDatabase = Depends(get_database)):
+async def get_random_anime(
+    sfw: bool = Query(True), db: AsyncIOMotorDatabase = Depends(get_database)
+):
     anime_collection = db.new_animes
-    count = await anime_collection.count_documents({})
+    mongo_query = apply_sfw_mongo_filter({}, sfw)
+    count = await anime_collection.count_documents(mongo_query)
 
     if count == 0:
         raise AnimeNotFoundException(detail="No animes found")
 
     random_index = random.randint(0, count - 1)
     anime = (
-        await anime_collection.find({}, ANIME_PROJECTION)
+        await anime_collection.find(mongo_query, ANIME_PROJECTION)
         .skip(random_index)
         .limit(1)
         .to_list(length=1)
@@ -225,12 +242,16 @@ async def get_random_anime(db: AsyncIOMotorDatabase = Depends(get_database)):
 
 @router.get("/top-rated", response_model=AnimeListResponse)
 async def top_rated_anime(
-    request: Request, limit: int = 10, db: AsyncIOMotorDatabase = Depends(get_database)
+    request: Request,
+    limit: int = 10,
+    sfw: bool = Query(True),
+    db: AsyncIOMotorDatabase = Depends(get_database),
 ):
-    validate_query_params(request, {"limit"})
+    validate_query_params(request, {"limit", "sfw"})
     anime_collection = db.new_animes
+    mongo_query = apply_sfw_mongo_filter({}, sfw)
     cursor = (
-        anime_collection.find({}, ANIME_PROJECTION)
+        anime_collection.find(mongo_query, ANIME_PROJECTION)
         .sort("averageScore", -1)
         .limit(limit)
     )
@@ -254,10 +275,17 @@ async def create_embeddings(
 
 
 @router.get("/{id}", response_model=AnimeResponse)
-async def get_anime_by_id(id: int, db: AsyncIOMotorDatabase = Depends(get_database)):
+async def get_anime_by_id(
+    id: int,
+    sfw: bool = Query(True),
+    db: AsyncIOMotorDatabase = Depends(get_database),
+):
     anime_collection = db.new_animes
     anime = await anime_collection.find_one({"id": id})
     if not anime:
+        raise AnimeNotFoundException(detail="Anime not found")
+
+    if sfw and is_adult_content(anime.get("genres")):
         raise AnimeNotFoundException(detail="Anime not found")
 
     anime.pop("_id", None)

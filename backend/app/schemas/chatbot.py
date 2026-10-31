@@ -18,6 +18,7 @@ class ChatBotRequest(BaseModel):
     message: str
     model_id: ModelID = ModelID.GEMMA
     session_id: str | None = None
+    sfw: bool = True
 
 
 class ChatBotResponse(BaseModel):

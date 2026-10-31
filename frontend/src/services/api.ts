@@ -44,6 +44,7 @@ export const getAllAnimes = async (
     season?: string;
     year?: number;
     query?: string;
+    sfw?: boolean;
   }
 ): Promise<AnimesListResponse> => {
   const response = await api.get(`${API_URL}/v1/animes`, {
@@ -57,9 +58,12 @@ export const getAllAnimes = async (
 };
 
 export const getAnimeById = async (
-  id: number
+  id: number,
+  sfw: boolean = true
 ): Promise<AxiosResponse<AnimeResponse>> => {
-  return api.get(`${API_URL}/v1/animes/${id}`);
+  return api.get(`${API_URL}/v1/animes/${id}`, {
+    params: { sfw },
+  });
 };
 
 export const getRecommendations = async (
@@ -70,34 +74,43 @@ export const getRecommendations = async (
       query: recommendations.query,
       mode: recommendations.mode,
       top_k: recommendations.top_k,
+      sfw: recommendations.sfw ?? true,
     },
   });
 };
 
-export const getGenres = async (): Promise<AxiosResponse<GenresResponse>> => {
-  return api.get(`${API_URL}/v1/animes/genres`);
+export const getGenres = async (
+  sfw: boolean = true
+): Promise<AxiosResponse<GenresResponse>> => {
+  return api.get(`${API_URL}/v1/animes/genres`, {
+    params: { sfw },
+  });
 };
 
 export const filterByGenre = async (
   genre: string,
   page = 1,
-  limit = 10
+  limit = 10,
+  sfw: boolean = true
 ): Promise<AxiosResponse<AnimeListResponse>> => {
   return api.get(`${API_URL}/v1/animes/filter`, {
     params: {
       genre,
       page,
       limit,
+      sfw,
     },
   });
 };
 
 export const searchAnime = async (
-  query: string
+  query: string,
+  sfw: boolean = true
 ): Promise<AxiosResponse<AnimeListResponse>> => {
   return api.get(`${API_URL}/v1/animes/search`, {
     params: {
       query: query,
+      sfw,
     },
   });
 };
@@ -112,18 +125,22 @@ export const suggestAnime = async (
   });
 };
 
-export const getRandomAnime = async (): Promise<
-  AxiosResponse<AnimeResponse>
-> => {
-  return api.get(`${API_URL}/v1/animes/random`);
+export const getRandomAnime = async (
+  sfw: boolean = true
+): Promise<AxiosResponse<AnimeResponse>> => {
+  return api.get(`${API_URL}/v1/animes/random`, {
+    params: { sfw },
+  });
 };
 
 export const getTopRated = async (
-  limit: number
+  limit: number,
+  sfw: boolean = true
 ): Promise<AxiosResponse<AnimeListResponse>> => {
   return api.get(`${API_URL}/v1/animes/top-rated`, {
     params: {
       limit: limit,
+      sfw,
     },
   });
 };
@@ -135,12 +152,14 @@ export const getChatbotModels = async () => {
 export const sendChatMessage = async (
   message: string,
   model_id: string = "mistralai/devstral-2512:free",
-  session_id?: string
+  session_id?: string,
+  sfw: boolean = true
 ): Promise<AxiosResponse<ChatbotResponse>> => {
   return api.post(`${API_URL}/v1/animes/chatbot`, {
     message,
     model_id,
     session_id,
+    sfw,
   });
 };
 
@@ -205,12 +224,13 @@ export const streamChatMessage = async (
   message: string,
   model_id: string,
   session_id: string,
+  sfw: boolean,
   handlers: StreamHandlers
 ): Promise<void> => {
   const response = await fetch(`${API_URL}/v1/animes/chatbot/stream`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message, model_id, session_id }),
+    body: JSON.stringify({ message, model_id, session_id, sfw }),
     signal: handlers.signal,
   });
 

@@ -1,13 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
+import { useSfw } from "../context/SfwContext";
 import { getAllAnimes } from "../services/api";
 import { AnimeCard } from "./AnimeCard";
 import { CardGridSkeleton } from "./AnimeCardSkeleton";
 import { Error } from "./Error";
 
 const GenreHighlights = ({ genre }: { genre: string }) => {
+  const { isSfw } = useSfw();
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["genreHighlights", genre],
-    queryFn: () => getAllAnimes(1, 5, { genre }),
+    queryKey: ["genreHighlights", genre, isSfw],
+    queryFn: () => getAllAnimes(1, 5, { genre, sfw: isSfw }),
     staleTime: 1000 * 60 * 5,
   });
 

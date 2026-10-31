@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMediaQuery } from "../hooks/useMediaQuery";
+import SfwToggle from "./SfwToggle";
 import ThemeToggle from "./ThemeToggle";
 import { useAuth0, type User } from "@auth0/auth0-react";
 import { Button, Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/react';
@@ -241,12 +242,14 @@ const Navbar = () => {
                     </MenuItems>
                   </Menu>
                 )}
+                <SfwToggle />
                 <ThemeToggle />
               </div>
             )}
 
             {!isDesktop && (
-              <div className="flex items-center">
+              <div className="flex items-center gap-1">
+                <SfwToggle />
                 <ThemeToggle />
                 <button
                   onClick={toggleMenu}

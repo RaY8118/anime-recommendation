@@ -3,9 +3,12 @@ import { TrashIcon } from "@heroicons/react/24/solid";
 import {
   CalendarDaysIcon,
   FilmIcon,
+  ShieldExclamationIcon,
   SignalIcon,
 } from "@heroicons/react/24/outline";
 import { Link } from "react-router-dom";
+import { useSfw } from "../context/SfwContext";
+import { isAdultAnime } from "../lib/sfw";
 import type { AnimeOut } from "../types/anime";
 
 export const AnimeCard = ({
@@ -15,6 +18,20 @@ export const AnimeCard = ({
   anime: AnimeOut;
   onDelete?: () => void;
 }) => {
+  const { isSfw } = useSfw();
+
+  if (isSfw && isAdultAnime(anime.genres, anime.isAdult)) {
+    return (
+      <div className="mb-6 flex min-h-72 flex-col items-center justify-center gap-2 rounded-2xl glass p-6 text-center text-text-light">
+        <ShieldExclamationIcon className="h-10 w-10 text-primary" />
+        <p className="font-semibold text-text">Hidden by SFW mode</p>
+        <p className="text-sm">
+          Turn off SFW mode in the navbar to view this title.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="group relative mb-6 transform rounded-2xl glass p-5 text-text shadow-lg transition-all duration-300 hover:-translate-y-2 hover:border-primary hover:shadow-2xl hover:shadow-primary/20">
       {/* Delete button outside of the Link */}

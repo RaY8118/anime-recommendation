@@ -4,12 +4,15 @@ import { LockClosedIcon } from "@heroicons/react/24/outline";
 import { AnimeCard } from "../components/AnimeCard";
 import { CardGridSkeleton } from "../components/AnimeCardSkeleton";
 import { Error } from "../components/Error";
+import { useSfw } from "../context/SfwContext";
+import { isAdultAnime } from "../lib/sfw";
 import type { WatchlistAnimeOut } from "../types/watchlist";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Tab } from '@headlessui/react';
 import { AnimeStatus } from "../types/anime";
 
 const Watchlist = () => {
+  const { isSfw } = useSfw();
   const {
     getAccessTokenSilently,
     isAuthenticated,
@@ -91,6 +94,9 @@ const Watchlist = () => {
   }
 
   const watchlist: WatchlistAnimeOut[] = data || [];
+  const visibleWatchlist = isSfw
+    ? watchlist.filter((anime) => !isAdultAnime(anime.genres, anime.isAdult))
+    : watchlist;
 
   // Define statuses for tabs
   const statuses = Object.values(AnimeStatus);
@@ -101,7 +107,7 @@ const Watchlist = () => {
         My Watchlist
       </h1>
 
-      {watchlist.length === 0 ? (
+      {visibleWatchlist.length === 0 ? (
         <div className="text-center text-text-light">
           Your watchlist is empty.
         </div>
@@ -131,7 +137,7 @@ const Watchlist = () => {
                 className="rounded-2xl glass p-3 focus:outline-none"
               >
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                  {watchlist
+                  {visibleWatchlist
                     .filter((anime) => anime.user_anime_status === status)
                     .map((anime) => (
                       <AnimeCard

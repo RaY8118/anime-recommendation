@@ -11,6 +11,7 @@ import {
   ClockIcon,
   DocumentTextIcon,
   FilmIcon,
+  ShieldExclamationIcon,
   SignalIcon,
   TagIcon,
 } from "@heroicons/react/24/outline";
@@ -20,6 +21,8 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Error as ErrorComponent } from "../components/Error";
 import { Loader } from "../components/Loader";
+import { useSfw } from "../context/SfwContext";
+import { isAdultAnime } from "../lib/sfw";
 import {
   addToWatchlist,
   deleteFromWatchlist,
@@ -101,6 +104,7 @@ const AnimeDetails = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { isAuthenticated, getAccessTokenSilently } = useAuth0();
+  const { isSfw, toggleSfw } = useSfw();
 
   const [userAnimeStatus, setUserAnimeStatus] = useState<AnimeStatus>(
     AnimeStatus.PLANNED
@@ -113,10 +117,10 @@ const AnimeDetails = () => {
     isError,
     error,
   } = useQuery({
-    queryKey: ["animeDetails", id],
+    queryKey: ["animeDetails", id, isSfw],
     queryFn: async () => {
       if (!id) throw new Error("Anime name is missing");
-      const response = await getAnimeById(Number(id));
+      const response = await getAnimeById(Number(id), isSfw);
       return response.data.anime as AnimeOut;
     },
     staleTime: 1000 * 60 * 5,
@@ -204,6 +208,30 @@ const AnimeDetails = () => {
   if (!animeResponse) return <ErrorComponent message="Anime not found" />;
 
   const anime = animeResponse;
+
+  if (isSfw && isAdultAnime(anime.genres, anime.isAdult)) {
+    return (
+      <div className="container mx-auto px-4 py-16">
+        <div className="mx-auto max-w-md rounded-2xl glass p-8 text-center shadow-xl">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/15 text-primary">
+            <ShieldExclamationIcon className="h-7 w-7" />
+          </div>
+          <h2 className="mb-2 text-2xl font-bold text-text">
+            Hidden by SFW mode
+          </h2>
+          <p className="mb-6 text-text-light">
+            This anime is hidden while SFW mode is on.
+          </p>
+          <button
+            onClick={toggleSfw}
+            className="w-full rounded-full bg-gradient-to-r from-primary to-accent px-6 py-3 font-semibold text-white shadow-md shadow-primary/30 transition-all duration-300 hover:brightness-110"
+          >
+            Turn off SFW mode
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-10">

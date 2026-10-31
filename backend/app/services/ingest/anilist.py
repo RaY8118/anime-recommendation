@@ -41,6 +41,7 @@ async def get_anime(
           coverImage {
             large
           }
+          isAdult
         }
       }
     }
@@ -122,6 +123,7 @@ async def get_anime_by_name(name: str):
         coverImage {
           large
         }
+        isAdult
       }
     }
     """
@@ -179,6 +181,7 @@ async def process_anime(anime):
     anime["seasonYear"] = anime.get("seasonYear")
     anime["status"] = anime.get("status")
     anime["source"] = anime.get("source")
+    anime["isAdult"] = anime.get("isAdult")
 
     studios_raw = anime.get("studios", [])
     if isinstance(studios_raw, dict):

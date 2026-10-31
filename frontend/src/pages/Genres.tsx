@@ -1,15 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimeCard } from "../components/AnimeCard";
 import { CardGridSkeleton } from "../components/AnimeCardSkeleton";
 import { Error as ErrorComponent } from "../components/Error";
 import { Loader } from "../components/Loader";
+import { useSfw } from "../context/SfwContext";
+import { isAdultGenre } from "../lib/sfw";
 import { filterByGenre, getGenres } from "../services/api";
 import type { AnimeOut } from "../types/anime";
 
 const limit = 12;
 
 const Genres = () => {
+  const { isSfw } = useSfw();
   const [selectedGenre, setSelectedGenre] = useState("");
   const [page, setPage] = useState(1);
 
@@ -19,9 +22,9 @@ const Genres = () => {
     isError: genresError,
     error: genresFetchError,
   } = useQuery({
-    queryKey: ["genres"],
+    queryKey: ["genres", isSfw],
     queryFn: async () => {
-      const res = await getGenres();
+      const res = await getGenres(isSfw);
       return res.data.genres;
     },
     staleTime: 1000 * 60 * 10,
@@ -33,14 +36,21 @@ const Genres = () => {
     isError: animesError,
     error: animesFetchError,
   } = useQuery({
-    queryKey: ["animesByGenre", selectedGenre, page],
+    queryKey: ["animesByGenre", selectedGenre, page, isSfw],
     queryFn: async () => {
-      const res = await filterByGenre(selectedGenre, page, limit);
+      const res = await filterByGenre(selectedGenre, page, limit, isSfw);
       return res.data.results as AnimeOut[];
     },
     enabled: !!selectedGenre,
     staleTime: 1000 * 60 * 5,
   });
+
+  useEffect(() => {
+    if (isSfw && isAdultGenre(selectedGenre)) {
+      setSelectedGenre("");
+      setPage(1);
+    }
+  }, [isSfw, selectedGenre]);
 
   const handleGenreChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedGenre(e.target.value);

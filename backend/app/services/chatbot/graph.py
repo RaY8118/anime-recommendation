@@ -27,9 +27,16 @@ from app.services.chatbot.saver import get_checkpointer
 from app.services.chatbot.state import ChatState
 
 
-async def _build_session_graph(db: AsyncIOMotorDatabase, model_id: str):
+async def _build_session_graph(
+    db: AsyncIOMotorDatabase, model_id: str, sfw: bool = True
+):
     checkpointer = await get_checkpointer()
     instruction = MODEL_SPECIFIC_INSTRUCTIONS.get(model_id, DEFAULT_PROMPT)
+    if sfw:
+        instruction += (
+            "\nOnly suggest titles suitable for a general audience. "
+            "Never suggest or describe hentai or ecchi content."
+        )
 
     async def retrieve_node(state: ChatState) -> dict:
         messages = list(state.get("messages") or [])
@@ -52,7 +59,7 @@ async def _build_session_graph(db: AsyncIOMotorDatabase, model_id: str):
             writer({"event": "status", "data": {"stage": "searching"}})
 
         docs = await safe_retrieve_anime_context(
-            anime_query.query or message_text, db, qdrant_filter
+            anime_query.query or message_text, db, qdrant_filter, sfw
         )
 
         if writer is not None and docs:

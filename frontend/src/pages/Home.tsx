@@ -5,19 +5,21 @@ import { Error } from "../components/Error";
 import GenreHighlights from "../components/GenreHighlights";
 import { Loader } from "../components/Loader";
 import TopRatedList from "../components/TopRatedList";
+import { useSfw } from "../context/SfwContext";
 import { getRandomAnime, getTopRated } from "../services/api";
 import { Tab } from '@headlessui/react';
 
 const Home = () => {
+  const { isSfw } = useSfw();
   const {
     data: randomAnime,
     isLoading: loadingRandom,
     isError: errorRandom,
     error: randomError,
   } = useQuery({
-    queryKey: ["randomAnime"],
+    queryKey: ["randomAnime", isSfw],
     queryFn: async () => {
-      const res = await getRandomAnime();
+      const res = await getRandomAnime(isSfw);
       return res.data.anime;
     },
     refetchInterval: 60000,
@@ -30,9 +32,9 @@ const Home = () => {
     isError: errorTopRated,
     error: topRatedError,
   } = useQuery({
-    queryKey: ["topRatedAnimes"],
+    queryKey: ["topRatedAnimes", isSfw],
     queryFn: async () => {
-      const res = await getTopRated(10);
+      const res = await getTopRated(10, isSfw);
       return res.data.results;
     },
     staleTime: 1000 * 60 * 5,
