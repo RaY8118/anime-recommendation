@@ -1,5 +1,6 @@
 from app.core.deps import get_database
 from app.core.exceptions import AnimeNotFoundException
+from app.core.validate import validate_query_params
 from app.schemas.animes import AnimeListResponse
 from app.schemas.recommendations import QueryMode
 from app.services.anime_recommendations import (
@@ -7,7 +8,6 @@ from app.services.anime_recommendations import (
     retrieve_by_genre,
     retrieve_by_name,
 )
-from app.utils.validate_params import validate_query_params
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from motor.motor_asyncio import AsyncIOMotorDatabase
 

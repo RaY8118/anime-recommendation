@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Optional
 
 from app.core.deps import get_database
+from app.core.security import get_current_user_id
 from app.schemas.animes import AnimeStatus
 from app.schemas.watchlist import (
     Watchlist,
@@ -9,7 +10,6 @@ from app.schemas.watchlist import (
     WatchlistItem,
     WatchlistResponse,
 )
-from app.utils.auth0_security import get_current_user_id
 from fastapi import APIRouter, Depends, HTTPException
 from motor.motor_asyncio import AsyncIOMotorDatabase
 

@@ -1,11 +1,7 @@
 import asyncio
 
-from langchain_core.documents import Document
-from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
-from langchain_openrouter import ChatOpenRouter
-from motor.motor_asyncio import AsyncIOMotorDatabase
-from qdrant_client.http.models import FieldCondition, Filter, MatchValue, Range
-
+from app.core.embeddings import embeddings
+from app.core.qdrant import COLLECTION_NAME, client
 from app.services.anime_recommendations import _get_animes_by_ids
 from app.services.chatbot.config import (
     EXTRACTION_INSTRUCTION,
@@ -15,8 +11,11 @@ from app.services.chatbot.config import (
     RETRIEVAL_TOP_K,
 )
 from app.services.chatbot.models import AnimeQuery
-from app.utils.embeddings import embeddings
-from app.utils.qdrant_client import COLLECTION_NAME, client
+from langchain_core.documents import Document
+from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
+from langchain_openrouter import ChatOpenRouter
+from motor.motor_asyncio import AsyncIOMotorDatabase
+from qdrant_client.http.models import FieldCondition, Filter, MatchValue, Range
 
 
 async def extract_query(

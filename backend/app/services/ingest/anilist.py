@@ -2,9 +2,9 @@ import asyncio
 
 import httpx
 from app.core.deps import get_database
+from app.core.embeddings import generate_embeddings
+from app.core.text import clean_html
 from app.schemas.animes import Anime
-from app.utils.clean_text import clean_html
-from app.utils.embeddings import generate_embeddings
 from fastapi import Depends
 from motor.motor_asyncio import AsyncIOMotorDatabase
 

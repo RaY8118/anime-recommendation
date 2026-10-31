@@ -1,6 +1,6 @@
 from typing import Any
 
-from app.utils.qdrant_client import BATCH_SIZE, vector_db
+from app.core.qdrant import BATCH_SIZE, vector_db
 from langchain_core.documents import Document
 
 

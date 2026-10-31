@@ -1,6 +1,8 @@
 import random
 
 from app.core.deps import get_database
+from app.core.fetch_status import get_current_page, update_current_page
+from app.core.validate import validate_query_params
 from app.schemas.animes import (
     AnimeListResponse,
     AnimeResponse,
@@ -8,10 +10,8 @@ from app.schemas.animes import (
     GenresResponse,
     MessageResponse,
 )
-from app.utils.anime_api import get_anime
-from app.utils.anime_embedding_generation import generate_anime_embeddings
-from app.utils.fetch_status import get_current_page, update_current_page
-from app.utils.validate_params import validate_query_params
+from app.services.embeddings.generate import generate_anime_embeddings
+from app.services.ingest.anilist import get_anime
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
