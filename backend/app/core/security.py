@@ -50,7 +50,7 @@ def get_current_user(
         # print("✅ TOKEN CLAIMS:", claims)
         return claims
 
-    except Exception as e:
+    except Exception:
         # print("❌ TOKEN VALIDATION FAILED:", str(e))
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

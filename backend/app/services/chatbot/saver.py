@@ -162,9 +162,7 @@ class AsyncRedisLiteSaver(BaseCheckpointSaver[V]):
         }
 
         checkpoint_type = data["checkpoint_type"].decode("utf-8")
-        checkpoint = self.serde.loads_typed(
-            (checkpoint_type, data["checkpoint"])
-        )
+        checkpoint = self.serde.loads_typed((checkpoint_type, data["checkpoint"]))
         metadata_type = data["metadata_type"].decode("utf-8")
         metadata = self.serde.loads_typed((metadata_type, data["metadata"]))
 

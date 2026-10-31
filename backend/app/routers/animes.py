@@ -1,6 +1,10 @@
 import random
 
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from motor.motor_asyncio import AsyncIOMotorDatabase
+
 from app.core.deps import get_database
+from app.core.exceptions import AnimeNotFoundException, BadRequestException
 from app.core.fetch_status import get_current_page, update_current_page
 from app.core.sfw import apply_sfw_mongo_filter, is_adult_content
 from app.core.validate import validate_query_params
@@ -13,8 +17,6 @@ from app.schemas.animes import (
 )
 from app.services.embeddings.generate import generate_anime_embeddings
 from app.services.ingest.anilist import get_anime
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
-from motor.motor_asyncio import AsyncIOMotorDatabase
 
 router = APIRouter()
 

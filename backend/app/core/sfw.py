@@ -19,18 +19,14 @@ def is_adult_content(genres: list[str] | None) -> bool:
     return any((genre or "").lower() in _ADULT_GENRES_LOWER for genre in genres or [])
 
 
-def apply_sfw_mongo_filter(
-    query: dict[str, Any], sfw: bool = True
-) -> dict[str, Any]:
+def apply_sfw_mongo_filter(query: dict[str, Any], sfw: bool = True) -> dict[str, Any]:
     """Wrap a Mongo query so adult titles are excluded when SFW mode is on."""
     if not sfw:
         return query
     return {"$and": [query, SFW_MONGO_FILTER]}
 
 
-def merge_sfw_qdrant_filter(
-    filters: Filter | None, sfw: bool = True
-) -> Filter | None:
+def merge_sfw_qdrant_filter(filters: Filter | None, sfw: bool = True) -> Filter | None:
     """Add the SFW exclusions to an existing Qdrant filter."""
     if not sfw:
         return filters

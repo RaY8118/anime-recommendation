@@ -1,6 +1,11 @@
 import json
 
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
+from motor.motor_asyncio import AsyncIOMotorDatabase
+
 from app.core.deps import get_database
+from app.core.exceptions import AnimeNotFoundException
 from app.schemas.chatbot import (
     AVAILABLE_MODELS,
     ChatBotRequest,
@@ -8,12 +13,8 @@ from app.schemas.chatbot import (
     ClearChatHistoryRequest,
 )
 from app.schemas.common import MessageResponse
-from app.core.exceptions import AnimeNotFoundException, ServiceUnavailableException
 from app.services.chatbot.chat import langchain_chatbot, stream_chatbot
 from app.services.chatbot.saver import clear_chat_history
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import StreamingResponse
-from motor.motor_asyncio import AsyncIOMotorDatabase
 
 router = APIRouter()
 

@@ -59,6 +59,8 @@ backend/
 
 - **`/v1/animes`** (`routers/animes.py`): `POST /fetch`, `POST /recommendations`, `GET ""` (list), `POST /suggestions`, `GET /genres`, `GET /search`, `GET /filter`, `GET /random`, `GET /top-rated`, `GET /generate-embeddings`, `GET /{id}` (fetch by numeric ID), `GET /chatbot/models`, `POST /chatbot`, `POST /chatbot/stream` (SSE token streaming), `POST /chatbot/clear` (clears Redis chat history for a session)
 - **`/v1/ping`** (`routers/ping.py`): `GET ""` (public), `GET /private` (Auth0-protected)
+- **`/health`** (`main.py`): `GET` root-level liveness probe (no `/v1` prefix, no DB access); returns `{"status": "ok"}`
+- **`/v1/models`** (`main.py`): `GET` alias for `/v1/animes/chatbot/models`; returns the chatbot model catalogue
 - **`/v1/watchlist`** (`routers/watchlist.py`): `POST /add`, `GET /`, `GET /{anime_id}`, `DELETE /{anime_id}`, `PUT /{anime_id}` (all require Auth0 user)
 
 > Note: The legacy `fetch_anime.py` targets `http://localhost:8000/animes/fetch` (missing `/v1`). Prefer the Go fetcher for bulk ingestion.

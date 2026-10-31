@@ -1,6 +1,9 @@
 from datetime import datetime
 from typing import Optional
 
+from fastapi import APIRouter, Depends, HTTPException
+from motor.motor_asyncio import AsyncIOMotorDatabase
+
 from app.core.deps import get_database
 from app.core.security import get_current_user_id
 from app.schemas.animes import AnimeStatus
@@ -10,8 +13,6 @@ from app.schemas.watchlist import (
     WatchlistItem,
     WatchlistResponse,
 )
-from fastapi import APIRouter, Depends, HTTPException
-from motor.motor_asyncio import AsyncIOMotorDatabase
 
 router = APIRouter()
 

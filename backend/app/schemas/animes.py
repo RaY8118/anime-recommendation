@@ -2,8 +2,6 @@ from enum import Enum
 
 from pydantic import BaseModel, Field
 
-from app.schemas.common import MessageResponse
-
 
 class AnimeStatus(str, Enum):
     WATCHING = "watching"

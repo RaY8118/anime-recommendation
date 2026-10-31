@@ -1,3 +1,6 @@
+from fastapi import APIRouter, Depends, Query, Request
+from motor.motor_asyncio import AsyncIOMotorDatabase
+
 from app.core.deps import get_database
 from app.core.exceptions import AnimeNotFoundException
 from app.core.validate import validate_query_params
@@ -8,8 +11,6 @@ from app.services.anime_recommendations import (
     retrieve_by_genre,
     retrieve_by_name,
 )
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from motor.motor_asyncio import AsyncIOMotorDatabase
 
 router = APIRouter()
 

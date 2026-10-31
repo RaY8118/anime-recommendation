@@ -95,7 +95,7 @@ async def generate_anime_embeddings(db, force: bool = False):
             processed += len(batch)
             existing_ids.update(batch_ids)
 
-            print(f"Stored: {processed}, " f"Skipped: {skipped}, Failed: {failed}")
+            print(f"Stored: {processed}, Skipped: {skipped}, Failed: {failed}")
 
         except Exception as exc:
             print(f"Batch failed: {exc}")
@@ -139,7 +139,7 @@ async def generate_anime_embeddings(db, force: bool = False):
 
     await flush_batch()
 
-    print(f"Finished. Stored: {processed}, " f"Skipped: {skipped}, Failed: {failed}")
+    print(f"Finished. Stored: {processed}, Skipped: {skipped}, Failed: {failed}")
 
     return {
         "processed": processed,

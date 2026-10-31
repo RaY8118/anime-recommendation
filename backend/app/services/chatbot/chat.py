@@ -1,10 +1,9 @@
 import asyncio
 
-from langchain_core.messages import HumanMessage
-from motor.motor_asyncio import AsyncIOMotorDatabase
-
 from app.services.chatbot.config import LLM_TIMEOUT_SECONDS, STREAM_TIMEOUT_SECONDS
 from app.services.chatbot.graph import _build_session_graph
+from langchain_core.messages import HumanMessage
+from motor.motor_asyncio import AsyncIOMotorDatabase
 
 
 async def langchain_chatbot(
@@ -102,4 +101,5 @@ async def stream_chatbot(
 
     answer = "".join(chunks)
 
+    yield ("done", {"text": answer})
     yield ("done", {"text": answer})
