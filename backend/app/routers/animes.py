@@ -13,8 +13,8 @@ from app.schemas.animes import (
     AnimeResponse,
     AnimesListResponse,
     GenresResponse,
-    MessageResponse,
 )
+from app.schemas.common import MessageResponse
 from app.services.embeddings.generate import generate_anime_embeddings
 from app.services.ingest.anilist import get_anime
 
