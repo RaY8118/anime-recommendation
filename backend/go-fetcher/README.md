@@ -2,7 +2,7 @@
 
 A standalone Go binary that ingests anime metadata from the [AniList GraphQL API](https://anilist.co/) into MongoDB for the NekoRec backend.
 
-The Python service (`backend/app/`) serves the API and generates vector embeddings. This tool only populates the `new_animes` collection; after running it, execute `backend/app/utils/anime_embedding_generation.py` to build the `embeddings` collection.
+The Python service (`backend/app/`) serves the API and generates vector embeddings. This tool only populates the `new_animes` collection; after running it, build the Qdrant `anime` embedding collection via `GET /v1/animes/generate-embeddings` from the Python backend.
 
 ## Layout
 
@@ -31,12 +31,10 @@ go run ./cmd/fetcher
 
 The binary auto-loads `.env` from `.env`, `../.env`, then `backend/.env`, so you can run it from repo root, `backend/`, or `backend/go-fetcher/`. Only `MONGODB_URI` is required.
 
-After ingest completes, generate embeddings:
+After ingest completes, generate embeddings (backend running, Qdrant configured):
 
 ```bash
-cd backend
-source .venv/bin/activate
-python app/utils/anime_embedding_generation.py
+curl -X GET "http://127.0.0.1:8000/v1/animes/generate-embeddings?force=false"
 ```
 
 ## Configuration

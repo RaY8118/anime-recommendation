@@ -11,7 +11,7 @@ This directory contains the FastAPI backend for NekoRec. It exposes REST endpoin
 - **Redis** — conversation history storage for the chatbot
 - **Auth0** (`authlib`) for JWT verification
 - **LangGraph / LangChain** (v1.x) + `langchain-openrouter` for the chatbot RAG pipeline
-- **OpenRouter** (embeddings: `google/gemini-embedding-001`, chat models)
+- **OpenRouter** (embeddings via `baai/bge-m3`, chat models)
 - **uv** for dependency management (`uv.lock`)
 
 ## App Structure
@@ -19,45 +19,53 @@ This directory contains the FastAPI backend for NekoRec. It exposes REST endpoin
 ```text
 backend/
 ├── app/
-│   ├── main.py           # FastAPI app, routers, CORS, request-timing middleware, global exception handler
-│   ├── dependencies.py   # MongoDB clients: get_mongo_client(), get_sync_mongo_client(), get_database() (DB="anime_recommendation")
+│   ├── main.py             # FastAPI app, routers, CORS, request-timing middleware, global exception handler
+│   ├── core/
+│   │   ├── config.py       # Pydantic Settings (env_file=".env"): env, allowed_origins, mongodb_uri, auth0/openrouter/qdrant/redis vars
+│   │   ├── deps.py         # MongoDB clients: get_mongo_client(), get_sync_mongo_client(), get_database() (DB="anime_recommendation")
+│   │   ├── embeddings.py   # OpenRouter embedding client (OpenAIEmbeddings, model baai/bge-m3)
+│   │   ├── qdrant.py       # Qdrant connection, `anime` collection + payload indexes, BATCH_SIZE
+│   │   ├── security.py     # Auth0 JWT verification (JWKS from AUTH0_DOMAIN)
+│   │   ├── sfw.py          # SFW filters (Mongo filter + adult-genre checks for Qdrant)
+│   │   ├── text.py         # Text preprocessing (clean_html) for descriptions
+│   │   ├── fetch_status.py # /fetch pagination state (`status` collection)
+│   │   ├── validate.py     # Unexpected-parameter validation helper
+│   │   └── exceptions.py   # Custom HTTPException subclasses
 │   ├── routers/
-│   │   ├── animes.py      # Anime CRUD, search/filter, recommendations, chatbot (+ streaming/clear), suggestions, embeddings
-│   │   ├── ping.py        # Health checks (public + Auth0-protected /private)
-│   │   └── watchlist.py    # Auth0-protected watchlist endpoints
+│   │   ├── animes.py          # List/search/filter/genres/random/top-rated, POST /fetch, POST /suggestions, GET /generate-embeddings, GET /{id}
+│   │   ├── recommendations.py # POST /recommendations (mode: description | genre | anime_name)
+│   │   ├── chatbot.py         # Models list, chat, /chatbot/stream (SSE), /chatbot/clear
+│   │   ├── ping.py            # Health checks (public + Auth0-protected /private)
+│   │   └── watchlist.py       # Auth0-protected watchlist endpoints
 │   ├── schemas/
-│   │   ├── animes.py      # Pydantic models for anime API
-│   │   └── watchlist.py   # Pydantic models for watchlist
-│   ├── services/
-│   │   ├── anime_recommendations.py # Content-based recommendations via Qdrant vector search
-│   │   └── chatbot/                  # LangGraph RAG chatbot pipeline
-│   │       ├── graph.py    # Pipeline graph: extract query → retrieve → answer (sync + streaming)
-│   │       ├── state.py    # LangGraph state definitions
-│   │       ├── models.py   # LLM model registry / AVAILABLE_MODELS
-│   │       ├── chat.py     # LLM invocation helpers
-│   │       ├── retrieval.py# Qdrant filtered retrieval (genre/studio/season/score filters)
-│   │       ├── saver.py    # Redis-backed chat history saver
-│   │       └── config.py   # Redis/model config, prompts, timeouts
-│   └── utils/
-│       ├── anime_api.py                # AniList API helpers/fetch utilities
-│       ├── anime_embedding_generation.py # Generate/store embeddings into Qdrant
-│       ├── auth0_security.py           # Auth0 JWT verification (domain/audience)
-│       ├── chatbot.py                  # Chatbot utilities (OpenRouter)
-│       ├── clean_text.py               # Text preprocessing for embeddings
-│       ├── embeddings.py               # Embedding helpers (OpenRouter Gemini embedding)
-│       ├── fetch_status.py             # Fetch/status utilities
-│       ├── qdrant_client.py            # Qdrant connection, `anime` collection + payload indexes
-│       └── validate_params.py          # Request validation helpers
+│   │   ├── animes.py, recommendations.py, chatbot.py   # Pydantic models (chatbot includes AVAILABLE_MODELS)
+│   │   ├── watchlist.py     # Pydantic models for watchlist
+│   │   └── common.py        # Shared response models (AnimeListResponse, MessageResponse)
+│   └── services/
+│       ├── anime_recommendations.py   # Content-based recommendations via Qdrant (description/genre/name modes)
+│       ├── ingest/anilist.py          # AniList GraphQL fetch → clean → validate → Mongo insert (+ embedding per anime)
+│       ├── embeddings/generate.py     # Batch generate/store embeddings into Qdrant from new_animes (skips existing unless force=True)
+│       └── chatbot/                   # LangGraph RAG chatbot pipeline
+│           ├── graph.py    # Pipeline graph: extract query → retrieve → answer (sync + streaming)
+│           ├── state.py    # LangGraph state definitions
+│           ├── models.py   # LLM model registry
+│           ├── chat.py     # LLM invocation helpers
+│           ├── retrieval.py# Qdrant filtered retrieval (genre/studio/season/score filters)
+│           ├── saver.py    # Redis-backed chat history saver
+│           └── config.py   # Redis/model config, prompts, timeouts
 ├── fetch_anime.py        # Legacy script (POSTs to /animes/fetch without /v1; 15s interval)
-├── Dockerfile            # Multi-stage/uv-based build; runs gunicorn on PORT (default 8000)
-├── .dockerignore         # ignores .venv, __pycache__
+├── Dockerfile            # uv-based build; runs gunicorn on PORT (default 8000)
 ├── pyproject.toml        # Dependencies, requires-python ==3.12.3
 └── uv.lock               # Locked dependency graph
 ```
 
-## API Routers (mounted at `/v1`)
+## API Routers (mounted at `/v1` in `app/main.py`)
 
-- **`/v1/animes`** (`routers/animes.py`): `POST /fetch`, `POST /recommendations`, `GET ""` (list), `POST /suggestions`, `GET /genres`, `GET /search`, `GET /filter`, `GET /random`, `GET /top-rated`, `GET /generate-embeddings`, `GET /{id}` (fetch by numeric ID), `GET /chatbot/models`, `POST /chatbot`, `POST /chatbot/stream` (SSE token streaming), `POST /chatbot/clear` (clears Redis chat history for a session)
+The three anime-related routers share the `/v1/animes` prefix:
+
+- **`routers/animes.py`**: `POST /fetch` (incremental AniList ingest), `GET ""` (paginated list), `POST /suggestions`, `GET /genres`, `GET /search`, `GET /filter`, `GET /random`, `GET /top-rated`, `GET /generate-embeddings?force=` (Qdrant embedding build), `GET /{id}` (fetch by numeric ID)
+- **`routers/recommendations.py`**: `POST /recommendations` (query + `mode` query param: `description` | `genre` | `anime_name`, `top_k`, `sfw`)
+- **`routers/chatbot.py`**: `GET /chatbot/models`, `POST /chatbot`, `POST /chatbot/stream` (SSE token streaming), `POST /chatbot/clear` (clears Redis chat history for a session)
 - **`/v1/ping`** (`routers/ping.py`): `GET ""` (public), `GET /private` (Auth0-protected)
 - **`/health`** (`main.py`): `GET` root-level liveness probe (no `/v1` prefix, no DB access); returns `{"status": "ok"}`
 - **`/v1/models`** (`main.py`): `GET` alias for `/v1/animes/chatbot/models`; returns the chatbot model catalogue
@@ -97,7 +105,7 @@ docker run -p 8000:8000 --env-file .env nekorec-backend
 | `MONGODB_URI` | Yes | — | MongoDB connection string |
 | `AUTH0_DOMAIN` | Yes (auth routes) | — | e.g. `your-tenant.auth0.com` |
 | `AUTH0_API_AUDIENCE` | Yes | — | Auth0 API audience/identifier |
-| `OPENROUTER_API_KEY` | Yes | — | Used for embeddings (`google/gemini-embedding-001`) and LLM chat |
+| `OPENROUTER_API_KEY` | Yes | — | Used for embeddings (`baai/bge-m3`) and LLM chat |
 | `QDRANT_CLOUD_ENDPOINT` | Yes (recommendations/chatbot) | — | Qdrant Cloud cluster URL |
 | `QDRANT_CLOUD_API_KEY` | Yes (recommendations/chatbot) | — | Qdrant Cloud API key |
 | `REDIS_URL` | Yes (chatbot) | — | Redis connection URL for chat session history |
@@ -110,11 +118,11 @@ docker run -p 8000:8000 --env-file .env nekorec-backend
 ## Data Dependencies
 
 - **Metadata**: Populated by `backend/go-fetcher` into `anime_recommendation.new_animes`.
-- **Embeddings**: Generated by `app/utils/anime_embedding_generation.py` into the **Qdrant** collection `anime` (used by `/v1/animes/recommendations` and chatbot retrieval).
+- **Embeddings**: Generated by `app/services/embeddings/generate.py` via `GET /v1/animes/generate-embeddings` into the **Qdrant** collection `anime` (used by `/v1/animes/recommendations` and chatbot retrieval).
 - **Chat history**: Stored in Redis (`app/services/chatbot/saver.py`), keyed by `session_id` with a TTL.
 - **Source**: AniList GraphQL API.
 
 ## Notes
 
-- DB name is hardcoded to `anime_recommendation` in `app/dependencies.py`.
+- DB name is hardcoded to `anime_recommendation` in `app/core/deps.py`.
 - No Python test suite exists in this repo. For data contract validation, see Go tests (`TestBSONTagsMatchPythonContract` in `backend/go-fetcher/internal/models/media_bson_test.go`).
