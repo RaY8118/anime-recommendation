@@ -10,7 +10,7 @@ This is a full-stack web application for anime recommendations. The backend is b
 - Python
 - FastAPI
 - MongoDB
-- Gemini for embeddings, OpenRouter for multi-model chatbot
+- OpenRouter for embeddings (`baai/bge-m3`) and the multi-model chatbot
 
 ### Frontend
 
@@ -56,11 +56,15 @@ The `frontend/src/services/api.ts` file contains functions for making API reques
 
 ## Data Fetching
 
-The `backend/app/utils/anime_api.py` file is responsible for fetching data from the AniList GraphQL API. The `get_anime` function fetches a paginated list of anime, processes them, generates embeddings for the descriptions, and stores them in the database. The `get_anime_by_name` function fetches a single anime by its name.
+The `backend/app/services/ingest/anilist.py` file is responsible for fetching data from the AniList GraphQL API. The `get_anime` function fetches a paginated list of anime, processes them, generates embeddings for the descriptions, and stores them in the database. The `get_anime_by_name` function fetches a single anime by its name.
+
+## Embeddings
+
+`backend/app/services/embeddings/generate.py` builds vector embeddings from the anime descriptions and upserts them into the **Qdrant** collection `anime`. It is triggered by `GET /v1/animes/generate-embeddings` (use `?force=true` to re-index everything).
 
 ## Chatbot
 
-The `backend/app/utils/chatbot.py` file implements the chatbot functionality. It uses the OpenRouter API to generate responses with various AI models. The `chatbot` function takes a user's message, generates an embedding for it, and then uses a vector search to find similar anime in the database. The results are then formatted and sent to the selected model along with a system prompt to generate a response.
+The chatbot lives in `backend/app/services/chatbot/` and is implemented as a LangGraph RAG pipeline: it extracts search constraints from the user's message, retrieves similar anime from Qdrant, and streams the LLM response over SSE (via OpenRouter models). Conversation history is stored in Redis with a TTL (`app/services/chatbot/saver.py`).
 
 ## Building and Running
 

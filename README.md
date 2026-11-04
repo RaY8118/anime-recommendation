@@ -26,7 +26,7 @@ NekoRec is a full-stack anime recommendation web app. It lets users browse anime
 - **Qdrant Cloud (langchain-qdrant, qdrant-client)** — Vector database for embeddings (`anime` collection) powering recommendations and chatbot retrieval.
 - **Redis** — Stores chatbot conversation history with a TTL (`REDIS_HISTORY_TTL`).
 - **Auth0 (authlib)** — JWT validation for protected routes (watchlist, ping-private).
-- **OpenRouter** — Used for embeddings (`google/gemini-embedding-001`) and LLM chat models.
+- **OpenRouter** — Used for embeddings (`baai/bge-m3`) and LLM chat models.
 - **AniList GraphQL API** — Source of truth for anime metadata.
 
 ### Data Ingestion (Go)
@@ -47,8 +47,8 @@ NekoRec is a full-stack anime recommendation web app. It lets users browse anime
 ## 🏗️ Architecture & Data Flow
 
 1. **Ingest**: `backend/go-fetcher` walks AniList IDs and upserts documents into MongoDB collection `new_animes` (database `anime_recommendation`). Documents use explicit BSON tags (`averageScore`, `seasonYear`) shared with the Python contract (validated by Go tests).
-2. **Embed**: Run embedding generation (e.g. `backend/app/utils/anime_embedding_generation.py`) to build vector embeddings from cleaned descriptions and upsert them into the **Qdrant** collection `anime` (with payload indexes for genres, studios, status, season, score, popularity).
-3. **Serve**: FastAPI (`app.main:app`) exposes REST API under `/v1/*` (animes, chatbot, watchlist, ping). Recommendations use vector similarity via Qdrant (`app/services/anime_recommendations.py`); the chatbot is a LangGraph pipeline in `app/services/chatbot/` that extracts search constraints, queries Qdrant, and streams LLM responses over SSE.
+2. **Embed**: Generate vector embeddings from cleaned descriptions (`app/services/embeddings/generate.py`, triggered by `GET /v1/animes/generate-embeddings`) and upsert them into the **Qdrant** collection `anime` (with payload indexes for genres, studios, status, season, score, popularity).
+3. **Serve**: FastAPI (`app.main:app`) exposes REST API under `/v1/*` (animes, recommendations, chatbot, watchlist, ping). Recommendations use vector similarity via Qdrant (`app/services/anime_recommendations.py`); the chatbot is a LangGraph pipeline in `app/services/chatbot/` that extracts search constraints, queries Qdrant, and streams LLM responses over SSE.
 4. **UI**: React app calls the backend via Axios (`src/services/api.ts`) and uses Auth0 for authenticated watchlist actions.
 
 ## 🚦 Quick Start
@@ -111,12 +111,11 @@ cd backend/go-fetcher
 go run ./cmd/fetcher
 ```
 
-Then generate embeddings (Python):
+Then generate embeddings (with the backend running and Qdrant configured):
 
 ```bash
-cd backend
-source .venv/bin/activate
-python app/utils/anime_embedding_generation.py
+curl -X GET "http://127.0.0.1:8000/v1/animes/generate-embeddings?force=false"
+# force=true re-embeds everything and overwrites existing Qdrant points
 ```
 
 ## 🔐 Environment Variables
@@ -136,7 +135,7 @@ python app/utils/anime_embedding_generation.py
 | `ALLOWED_ORIGINS` | No | `*` | Comma-separated CORS origins |
 | `ENV` | No | `DEVELOPMENT` | `DEVELOPMENT`/`PRODUCTION` affects CORS/logging behavior |
 
-> Note: `GEMINI_API_KEY` may appear in local `.env`/CI but is not referenced by backend Python code; the app uses OpenRouter endpoints (e.g. `google/gemini-embedding-001`).
+> Note: `GEMINI_API_KEY` may appear in local `.env`/CI but is not referenced by backend Python code; the app uses OpenRouter endpoints (e.g. `baai/bge-m3` for embeddings).
 
 ### Frontend (`frontend/.env`)
 
@@ -165,12 +164,11 @@ The fetcher auto-loads `.env` from `./.env`, `../.env`, or `backend/.env`. See `
 │   ├── uv.lock               # Locked deps
 │   ├── fetch_anime.py        # Legacy helper (calls /animes/fetch without /v1)
 │   ├── app/
-│   │   ├── main.py           # FastAPI app, routers, CORS, middleware
-│   │   ├── dependencies.py   # MongoDB clients, DB name
-│   │   ├── routers/          # animes.py, ping.py, watchlist.py
-│   │   ├── schemas/          # animes.py, watchlist.py (Pydantic)
-│   │   ├── services/          # anime_recommendations.py (Qdrant similarity), chatbot/ (LangGraph RAG pipeline: graph, state, retrieval, chat, models, saver, config)
-│   │   └── utils/            # embeddings, qdrant_client, anime_api, clean_text, auth0_security, chatbot, fetch_status, validate_params, ...
+│   │   ├── main.py           # FastAPI app, routers, CORS, request-timing middleware
+│   │   ├── core/             # config, deps (MongoDB clients, DB name), qdrant, embeddings, auth0 security, sfw, text cleaning
+│   │   ├── routers/          # animes.py, recommendations.py, chatbot.py, ping.py, watchlist.py
+│   │   ├── schemas/          # Pydantic models (animes, recommendations, chatbot, watchlist, common)
+│   │   └── services/         # anime_recommendations.py (Qdrant similarity), ingest/anilist.py (AniList fetch), embeddings/generate.py (Qdrant upsert), chatbot/ (LangGraph RAG pipeline)
 │   └── go-fetcher/           # Go AniList → MongoDB ingestor (cmd/, internal/, go.mod)
 └── frontend/
     ├── index.html

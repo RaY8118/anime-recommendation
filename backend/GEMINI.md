@@ -9,18 +9,17 @@ This is the backend for the NekoRec anime recommendation system. It is a Python-
 - **MongoDB:** The primary database for storing anime data, user information, and other application-related data.
 - **Uvicorn:** A lightning-fast ASGI server for running the FastAPI application.
 - **Pydantic:** Used for data validation and settings management.
-- **Gemini:** The Gemini API is used for generating embeddings.
-- **OpenRouter:** The OpenRouter API is used for the multi-model chatbot functionality.
+- **OpenRouter:** The OpenRouter API is used for generating embeddings (`baai/bge-m3`) and for the multi-model chatbot.
 
 ## Project Structure
 
 - `app/`: The main application directory.
-  - `routers/`: Contains the API endpoints for different resources (e.g., `animes`, `watchlist`).
-  - `schemas/`: Defines the Pydantic models for data validation and serialization.
-  - `utils/`: Includes utility functions for tasks such as interacting with the AniList API, generating embeddings, and managing the chatbot.
-  - `dependencies.py`: Contains dependency injection functions, such as for getting a database connection.
+  - `core/`: Cross-cutting infrastructure — settings (`config.py`), MongoDB clients and DB name (`deps.py`), Qdrant connection (`qdrant.py`), embedding client (`embeddings.py`), Auth0 JWT verification (`security.py`), SFW filtering (`sfw.py`), text cleaning (`text.py`), and custom exceptions.
+  - `routers/`: API endpoints for `animes`, `recommendations`, `chatbot`, `ping`, and `watchlist`.
+  - `schemas/`: Pydantic models for data validation and serialization.
+  - `services/`: Business logic — recommendations via Qdrant vector search (`anime_recommendations.py`), AniList ingestion (`ingest/anilist.py`), embedding generation (`embeddings/generate.py`), and the `chatbot/` LangGraph RAG pipeline.
   - `main.py`: The entry point of the FastAPI application.
-- `fetch_anime.py`: A script for fetching anime data from the AniList API and populating the database.
+- `fetch_anime.py`: Legacy script for fetching anime data (targets an outdated URL without the `/v1` prefix; prefer `go-fetcher` or `POST /v1/animes/fetch`).
 - `pyproject.toml`: The project's dependency and metadata configuration file.
 
 ## Running the Application
