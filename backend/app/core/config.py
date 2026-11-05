@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     qdrant_cloud_api_key: str | None = None
     redis_url: str | None = None
     redis_history_ttl: int = 86400
+    grpc_port: int = 50051
 
     @property
     def origins_list(self) -> list[str]:

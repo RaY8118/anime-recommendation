@@ -1,0 +1,48 @@
+syntax = "proto3";
+package anime.v1;
+
+option go_package = "github.com/RaY8118/anime-recommendation/backend/go-fetcher/gen/anime/v1;animev1";
+
+message Title {
+  optional string title_romaji = 1;
+  optional string title_english = 2;
+  optional string display_romaji = 3;
+  optional string display_english = 4;
+}
+
+message CoverImage {
+  optional string large = 1;
+}
+
+message IngestAnimeRequest {
+  int32 id = 1;
+  Title title = 2;
+  optional string description = 3;
+  repeated string genres = 4;
+  optional int32 average_score = 5;
+  optional int32 episodes = 6;
+  optional int32 duration = 7;
+  optional int32 chapters = 8;
+  optional int32 volumes = 9;
+  optional string season = 10;
+  optional int32 season_year = 11;
+  optional string status = 12;
+  optional string source = 13;
+  repeated string studios = 14;
+  optional CoverImage cover_image = 15;
+  int32 popularity = 16;
+  optional bool is_adult = 17;
+}
+
+message IngestSummary {
+  int32 received = 1;
+  repeated int32 ids = 2;
+  int32 inserted = 3;
+  int32 embedded = 4;
+  int32 failed = 5;
+  string message = 6;
+}
+
+service IngestService {
+  rpc IngestAnimes(stream IngestAnimeRequest) returns (IngestSummary);
+}
