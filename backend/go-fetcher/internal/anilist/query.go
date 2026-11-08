@@ -49,6 +49,7 @@ query ($id_in: [Int], $page: Int, $perPage: Int) {
 				large
 			}
 			popularity
+			isAdult
 		}
 	}
 }

@@ -13,9 +13,8 @@ import (
 func clearEnv(t *testing.T) {
 	t.Helper()
 	for _, key := range []string{
-		"MONGODB_URI",
-		"MONGO_DATABASE",
-		"MONGO_COLLECTION",
+		"GRPC_INGEST_ADDR",
+		"INGEST_TIMEOUT",
 		"ANILIST_ENDPOINT",
 		"ANIME_START_ID",
 		"ANIME_TOTAL_ID",
@@ -24,7 +23,6 @@ func clearEnv(t *testing.T) {
 		"FETCH_REQUEST_TIMEOUT",
 		"FETCH_MAX_RETRIES",
 		"FETCH_RETRY_BASE_DELAY",
-		"MONGO_TIMEOUT",
 	} {
 		t.Setenv(key, "")
 	}
@@ -45,7 +43,6 @@ func mustLoad(t *testing.T) *config.Config {
 
 func TestLoadAppliesDefaults(t *testing.T) {
 	clearEnv(t)
-	t.Setenv("MONGODB_URI", "mongodb://localhost:27017")
 
 	cfg := mustLoad(t)
 
@@ -54,9 +51,8 @@ func TestLoadAppliesDefaults(t *testing.T) {
 		got  any
 		want any
 	}{
-		{"MongoURI", cfg.MongoURI, "mongodb://localhost:27017"},
-		{"MongoDatabase", cfg.MongoDatabase, config.DefaultDatabase},
-		{"MongoCollection", cfg.MongoCollection, config.DefaultCollection},
+		{"IngestAddr", cfg.IngestAddr, config.DefaultIngestAddr},
+		{"IngestTimeout", cfg.IngestTimeout, config.DefaultIngestTimeout},
 		{"StartID", cfg.StartID, config.DefaultStartID},
 		{"TotalID", cfg.TotalID, config.DefaultTotalID},
 		{"BatchSize", cfg.BatchSize, config.DefaultBatchSize},
@@ -64,7 +60,6 @@ func TestLoadAppliesDefaults(t *testing.T) {
 		{"RequestTimeout", cfg.RequestTimeout, config.DefaultRequestTimeout},
 		{"MaxRetries", cfg.MaxRetries, config.DefaultMaxRetries},
 		{"RetryBase", cfg.RetryBase, config.DefaultRetryBase},
-		{"MongoTimeout", cfg.MongoTimeout, config.DefaultMongoTimeout},
 	}
 	for _, c := range checks {
 		if c.got != c.want {
@@ -90,9 +85,8 @@ func TestDefaultRangeIsNonEmpty(t *testing.T) {
 
 func TestLoadReadsEveryOverride(t *testing.T) {
 	clearEnv(t)
-	t.Setenv("MONGODB_URI", "mongodb://db:27017")
-	t.Setenv("MONGO_DATABASE", "other_db")
-	t.Setenv("MONGO_COLLECTION", "other_collection")
+	t.Setenv("GRPC_INGEST_ADDR", "ingest:50051")
+	t.Setenv("INGEST_TIMEOUT", "45s")
 	t.Setenv("ANILIST_ENDPOINT", "https://example.test/graphql")
 	t.Setenv("ANIME_START_ID", "500")
 	t.Setenv("ANIME_TOTAL_ID", "900")
@@ -101,15 +95,14 @@ func TestLoadReadsEveryOverride(t *testing.T) {
 	t.Setenv("FETCH_REQUEST_TIMEOUT", "1m30s")
 	t.Setenv("FETCH_MAX_RETRIES", "7")
 	t.Setenv("FETCH_RETRY_BASE_DELAY", "500ms")
-	t.Setenv("MONGO_TIMEOUT", "45s")
 
 	cfg := mustLoad(t)
 
-	if cfg.MongoDatabase != "other_db" {
-		t.Errorf("MongoDatabase = %q", cfg.MongoDatabase)
+	if cfg.IngestAddr != "ingest:50051" {
+		t.Errorf("IngestAddr = %q", cfg.IngestAddr)
 	}
-	if cfg.MongoCollection != "other_collection" {
-		t.Errorf("MongoCollection = %q", cfg.MongoCollection)
+	if cfg.IngestTimeout != 45*time.Second {
+		t.Errorf("IngestTimeout = %v, want 45s", cfg.IngestTimeout)
 	}
 	if cfg.AniListEndpoint != "https://example.test/graphql" {
 		t.Errorf("AniListEndpoint = %q", cfg.AniListEndpoint)
@@ -135,24 +128,20 @@ func TestLoadReadsEveryOverride(t *testing.T) {
 	if cfg.RetryBase != 500*time.Millisecond {
 		t.Errorf("RetryBase = %v, want 500ms", cfg.RetryBase)
 	}
-	if cfg.MongoTimeout != 45*time.Second {
-		t.Errorf("MongoTimeout = %v, want 45s", cfg.MongoTimeout)
-	}
 }
 
 // Every helper treats an empty string as "unset", so a blank value in a .env
 // file falls back to the default instead of producing a zero.
 func TestLoadTreatsEmptyValuesAsUnset(t *testing.T) {
 	clearEnv(t)
-	t.Setenv("MONGODB_URI", "mongodb://localhost:27017")
-	t.Setenv("MONGO_DATABASE", "")
+	t.Setenv("GRPC_INGEST_ADDR", "")
 	t.Setenv("ANIME_BATCH_SIZE", "")
 	t.Setenv("FETCH_REQUEST_TIMEOUT", "")
 
 	cfg := mustLoad(t)
 
-	if cfg.MongoDatabase != config.DefaultDatabase {
-		t.Errorf("MongoDatabase = %q, want the default", cfg.MongoDatabase)
+	if cfg.IngestAddr != config.DefaultIngestAddr {
+		t.Errorf("IngestAddr = %q, want the default", cfg.IngestAddr)
 	}
 	if cfg.BatchSize != config.DefaultBatchSize {
 		t.Errorf("BatchSize = %d, want the default", cfg.BatchSize)
@@ -162,17 +151,9 @@ func TestLoadTreatsEmptyValuesAsUnset(t *testing.T) {
 	}
 }
 
-func TestLoadRequiresMongoURI(t *testing.T) {
-	clearEnv(t)
-
-	_, err := config.Load()
-	if err == nil {
-		t.Fatal("expected an error when MONGODB_URI is unset")
-	}
-	if !strings.Contains(err.Error(), "MONGODB_URI") {
-		t.Errorf("error %q should name the missing variable", err)
-	}
-}
+// Load requires nothing from the environment anymore: GRPC_INGEST_ADDR has a
+// usable local-dev default, so a clean shell still produces a valid config
+// (TestLoadAppliesDefaults covers the default itself).
 
 func TestLoadRejectsMalformedNumbers(t *testing.T) {
 	cases := []struct{ key, value string }{
@@ -186,7 +167,6 @@ func TestLoadRejectsMalformedNumbers(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.key+"="+c.value, func(t *testing.T) {
 			clearEnv(t)
-			t.Setenv("MONGODB_URI", "mongodb://localhost:27017")
 			t.Setenv(c.key, c.value)
 
 			_, err := config.Load()
@@ -205,11 +185,10 @@ func TestLoadRejectsMalformedDurations(t *testing.T) {
 		"FETCH_REQUEST_DELAY",
 		"FETCH_REQUEST_TIMEOUT",
 		"FETCH_RETRY_BASE_DELAY",
-		"MONGO_TIMEOUT",
+		"INGEST_TIMEOUT",
 	} {
 		t.Run(key, func(t *testing.T) {
 			clearEnv(t)
-			t.Setenv("MONGODB_URI", "mongodb://localhost:27017")
 			t.Setenv(key, "3 seconds") // not Go duration syntax
 
 			_, err := config.Load()
@@ -227,7 +206,6 @@ func TestLoadRejectsMalformedDurations(t *testing.T) {
 // rather than silently becoming zero.
 func TestLoadRejectsBareNumberForDuration(t *testing.T) {
 	clearEnv(t)
-	t.Setenv("MONGODB_URI", "mongodb://localhost:27017")
 	t.Setenv("FETCH_REQUEST_DELAY", "3")
 
 	if _, err := config.Load(); err == nil {
@@ -237,7 +215,6 @@ func TestLoadRejectsBareNumberForDuration(t *testing.T) {
 
 func TestLoadSurfacesValidationErrors(t *testing.T) {
 	clearEnv(t)
-	t.Setenv("MONGODB_URI", "mongodb://localhost:27017")
 	t.Setenv("ANIME_TOTAL_ID", "10")
 	t.Setenv("ANIME_START_ID", "100") // TotalID < StartID
 
@@ -258,10 +235,8 @@ func TestLoadSurfacesValidationErrors(t *testing.T) {
 // mutates exactly one field.
 func validConfig() *config.Config {
 	return &config.Config{
-		MongoURI:        "mongodb://localhost:27017",
-		MongoDatabase:   "anime_recommendation",
-		MongoCollection: "new_animes",
-		MongoTimeout:    30 * time.Second,
+		IngestAddr:    "localhost:50051",
+		IngestTimeout: 30 * time.Second,
 
 		AniListEndpoint: "https://graphql.anilist.co",
 
@@ -288,9 +263,8 @@ func TestValidateRejects(t *testing.T) {
 		mutate  func(*config.Config)
 		wantSub string
 	}{
-		{"empty URI", func(c *config.Config) { c.MongoURI = "" }, "MONGODB_URI"},
-		{"empty database", func(c *config.Config) { c.MongoDatabase = "" }, "MONGO_DATABASE"},
-		{"empty collection", func(c *config.Config) { c.MongoCollection = "" }, "MONGO_COLLECTION"},
+		{"empty ingest addr", func(c *config.Config) { c.IngestAddr = "" }, "GRPC_INGEST_ADDR"},
+		{"zero ingest timeout", func(c *config.Config) { c.IngestTimeout = 0 }, "INGEST_TIMEOUT"},
 		{"zero start id", func(c *config.Config) { c.StartID = 0 }, "ANIME_START_ID"},
 		{"negative start id", func(c *config.Config) { c.StartID = -1 }, "ANIME_START_ID"},
 		{"total below start", func(c *config.Config) { c.TotalID = c.StartID - 1 }, "ANIME_TOTAL_ID"},
@@ -303,7 +277,6 @@ func TestValidateRejects(t *testing.T) {
 		{"negative retries", func(c *config.Config) { c.MaxRetries = -1 }, "FETCH_MAX_RETRIES"},
 		{"zero retry base", func(c *config.Config) { c.RetryBase = 0 }, "FETCH_RETRY_BASE_DELAY"},
 		{"negative retry base", func(c *config.Config) { c.RetryBase = -time.Second }, "FETCH_RETRY_BASE_DELAY"},
-		{"zero mongo timeout", func(c *config.Config) { c.MongoTimeout = 0 }, "MONGO_TIMEOUT"},
 	}
 
 	for _, c := range cases {

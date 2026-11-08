@@ -41,6 +41,9 @@ message IngestSummary {
   int32 embedded = 4;
   int32 failed = 5;
   string message = 6;
+  int32 upserted = 7;
+  int32 matched = 8;
+  int32 modified = 9;
 }
 
 service IngestService {

@@ -1,8 +1,10 @@
 """Ingest business logic — no gRPC types in this module.
 
 Takes a stream of already-decoded anime dicts, validates each through the
-Anime schema, upserts into Mongo (replace-one on `id`, mirroring go-fetcher's
-Store.Upsert), and flushes a single Qdrant embedding batch at end-of-stream.
+Anime schema, upserts the whole validated batch into Mongo in one bulk write
+at end-of-stream (ReplaceOne on `id`, ordered=False — same idempotency as
+go-fetcher's Store.Upsert, one round-trip instead of N), then flushes a
+single Qdrant embedding batch.
 """
 
 import asyncio
@@ -10,7 +12,7 @@ import logging
 from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
 
-from motor.motor_asyncio import AsyncIOMotorDatabase
+from pymongo import ReplaceOne
 
 from app.core.deps import get_mongo_client
 from app.core.qdrant import vector_db
@@ -25,6 +27,9 @@ class IngestResult:
     received: int = 0
     ids: list[int] = field(default_factory=list)
     inserted: int = 0
+    upserted: int = 0
+    matched: int = 0
+    modified: int = 0
     embedded: int = 0
     failed: int = 0
     errors: list[str] = field(default_factory=list)
@@ -40,31 +45,37 @@ async def ingest_stream(documents: AsyncIterator[dict]) -> IngestResult:
         try:
             validated = Anime(**document).model_dump()
             validated.pop("embedding", None)
-
-            await _upsert(db, validated)
-            result.inserted += 1
             result.ids.append(validated["id"])
             collected.append(validated)
         except Exception as exc:
             result.failed += 1
             result.errors.append(f"id={document.get('id')}: {exc}")
 
+    result.inserted = len(collected)
+
     if collected:
+        await _flush_upserts(db, collected, result)
         result.embedded = await _embed(collected, result)
 
     return result
 
 
-async def _upsert(db: AsyncIOMotorDatabase, document: dict) -> None:
-    """Replace-one upsert keyed on `id` — same idempotency as go-fetcher."""
-    await db.new_animes.replace_one({"id": document["id"]}, document, upsert=True)
+async def _flush_upserts(db, documents: list[dict], result: IngestResult) -> None:
+    """One unordered ReplaceOne-per-doc write. Counters mirror go-fetcher's
+    Store.Upsert WriteResult so the fetcher's backfill reporting stays valid."""
+    writes = [ReplaceOne({"id": doc["id"]}, doc, upsert=True) for doc in documents]
+    res = await db.new_animes.bulk_write(writes, ordered=False)
+    result.upserted = res.upserted_count
+    result.matched = res.matched_count
+    result.modified = res.modified_count
 
 
 async def _embed(documents: list[dict], result: IngestResult) -> int:
     """End-of-stream flush: one Qdrant batch for everything validated.
 
-    Uses anime_to_document so payload metadata matches exactly what
-    anime_recommendations.py and chatbot/retrieval.py filter on.
+    Runs AFTER the Mongo write so embedding targets documents that actually
+    persisted — a Qdrant failure is recoverable via force-reindex, while the
+    reverse order could embed data Mongo never saw.
     """
     batch_ids = [doc["id"] for doc in documents]
     batch = [anime_to_document(doc) for doc in documents]

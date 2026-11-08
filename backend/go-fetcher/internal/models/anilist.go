@@ -70,6 +70,7 @@ type GraphQLMedia struct {
 	Studios      StudioConnection `json:"studios"`
 	CoverImage   *CoverImage      `json:"coverImage"`
 	Popularity   int              `json:"popularity"`
+	IsAdult      bool             `json:"isAdult"`
 }
 
 // StudioConnection is the list wrapper AniList uses for studios.

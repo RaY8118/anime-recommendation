@@ -42,4 +42,7 @@ class IngestService(ingest_pb2_grpc.IngestServiceServicer):
             embedded=result.embedded,
             failed=failed,
             message=message,
+            upserted=result.upserted,
+            matched=result.matched,
+            modified=result.modified,
         )
