@@ -28,6 +28,7 @@ func TestBSONTagsMatchPythonContract(t *testing.T) {
 		Studios:      []string{"Pierrot"},
 		CoverImage:   &CoverImage{Large: stringp("https://example.com/naruto.jpg")},
 		Popularity:   5000,
+		IsAdult:      false,
 	}
 
 	b, err := bson.Marshal(m)
@@ -56,6 +57,7 @@ func TestBSONTagsMatchPythonContract(t *testing.T) {
 		"studios":      {},
 		"coverImage":   {},
 		"popularity":   {},
+		"isAdult":      {},
 	}
 
 	for k := range out {

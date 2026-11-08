@@ -313,6 +313,9 @@ type IngestSummary struct {
 	Embedded      int32                  `protobuf:"varint,4,opt,name=embedded,proto3" json:"embedded,omitempty"`
 	Failed        int32                  `protobuf:"varint,5,opt,name=failed,proto3" json:"failed,omitempty"`
 	Message       string                 `protobuf:"bytes,6,opt,name=message,proto3" json:"message,omitempty"`
+	Upserted      int32                  `protobuf:"varint,7,opt,name=upserted,proto3" json:"upserted,omitempty"`
+	Matched       int32                  `protobuf:"varint,8,opt,name=matched,proto3" json:"matched,omitempty"`
+	Modified      int32                  `protobuf:"varint,9,opt,name=modified,proto3" json:"modified,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -389,6 +392,27 @@ func (x *IngestSummary) GetMessage() string {
 	return ""
 }
 
+func (x *IngestSummary) GetUpserted() int32 {
+	if x != nil {
+		return x.Upserted
+	}
+	return 0
+}
+
+func (x *IngestSummary) GetMatched() int32 {
+	if x != nil {
+		return x.Matched
+	}
+	return 0
+}
+
+func (x *IngestSummary) GetModified() int32 {
+	if x != nil {
+		return x.Modified
+	}
+	return 0
+}
+
 var File_anime_v1_ingest_proto protoreflect.FileDescriptor
 
 const file_anime_v1_ingest_proto_rawDesc = "" +
@@ -443,14 +467,17 @@ const file_anime_v1_ingest_proto_rawDesc = "" +
 	"\a_statusB\t\n" +
 	"\a_sourceB\x0e\n" +
 	"\f_cover_imageB\v\n" +
-	"\t_is_adult\"\xa7\x01\n" +
+	"\t_is_adult\"\xf9\x01\n" +
 	"\rIngestSummary\x12\x1a\n" +
 	"\breceived\x18\x01 \x01(\x05R\breceived\x12\x10\n" +
 	"\x03ids\x18\x02 \x03(\x05R\x03ids\x12\x1a\n" +
 	"\binserted\x18\x03 \x01(\x05R\binserted\x12\x1a\n" +
 	"\bembedded\x18\x04 \x01(\x05R\bembedded\x12\x16\n" +
 	"\x06failed\x18\x05 \x01(\x05R\x06failed\x12\x18\n" +
-	"\amessage\x18\x06 \x01(\tR\amessage2X\n" +
+	"\amessage\x18\x06 \x01(\tR\amessage\x12\x1a\n" +
+	"\bupserted\x18\a \x01(\x05R\bupserted\x12\x18\n" +
+	"\amatched\x18\b \x01(\x05R\amatched\x12\x1a\n" +
+	"\bmodified\x18\t \x01(\x05R\bmodified2X\n" +
 	"\rIngestService\x12G\n" +
 	"\fIngestAnimes\x12\x1c.anime.v1.IngestAnimeRequest\x1a\x17.anime.v1.IngestSummary(\x01BQZOgithub.com/RaY8118/anime-recommendation/backend/go-fetcher/gen/anime/v1;animev1b\x06proto3"
 

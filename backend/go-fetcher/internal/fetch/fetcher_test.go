@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/RaY8118/anime-recommendation/backend/go-fetcher/internal/database"
 	"github.com/RaY8118/anime-recommendation/backend/go-fetcher/internal/fetch"
 	"github.com/RaY8118/anime-recommendation/backend/go-fetcher/internal/models"
 )
@@ -49,17 +48,18 @@ func (s *stubAniList) requestedIDs() []int {
 
 // stubStore records every batch it was asked to persist.
 type stubStore struct {
+	upsert func(media []models.Media) (fetch.WriteResult, error)
 	calls  [][]models.Media
-	upsert func(media []models.Media) (database.WriteResult, error)
 }
 
-func (s *stubStore) Upsert(_ context.Context, media []models.Media) (database.WriteResult, error) {
+func (s *stubStore) Upsert(_ context.Context, media []models.Media) (fetch.WriteResult, error) {
 	s.calls = append(s.calls, media)
 	if s.upsert != nil {
 		return s.upsert(media)
 	}
+
 	// Mirror the real Store: every document is treated as inserted.
-	return database.WriteResult{Upserted: int64(len(media))}, nil
+	return fetch.WriteResult{Upserted: int64(len(media))}, nil
 }
 
 // recordingSleep captures requested durations instead of waiting.
@@ -213,8 +213,8 @@ func TestRunCountsOnlyEntriesAnilistReturned(t *testing.T) {
 func TestRunAggregatesWriteResult(t *testing.T) {
 	anilist := &stubAniList{}
 	store := &stubStore{
-		upsert: func(media []models.Media) (database.WriteResult, error) {
-			return database.WriteResult{Matched: 3, Modified: 2}, nil
+		upsert: func(media []models.Media) (fetch.WriteResult, error) {
+			return fetch.WriteResult{Matched: 3, Modified: 2}, nil
 		},
 	}
 
@@ -294,8 +294,8 @@ func TestRunRecordsFailedWrite(t *testing.T) {
 
 	anilist := &stubAniList{}
 	store := &stubStore{
-		upsert: func([]models.Media) (database.WriteResult, error) {
-			return database.WriteResult{}, writeErr
+		upsert: func([]models.Media) (fetch.WriteResult, error) {
+			return fetch.WriteResult{}, writeErr
 		},
 	}
 

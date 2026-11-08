@@ -33,6 +33,7 @@ type Media struct {
 	Studios      []string    `json:"studios" bson:"studios"`
 	CoverImage   *CoverImage `json:"coverImage" bson:"coverImage"`
 	Popularity   int         `json:"popularity" bson:"popularity"`
+	IsAdult      bool        `json:"isAdult" bson:"isAdult"`
 }
 
 // Title holds both the normalised and the display form of an anime title.

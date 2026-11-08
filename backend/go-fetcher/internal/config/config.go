@@ -12,8 +12,7 @@ import (
 // Defaults matching the original hardcoded values, so an unconfigured run
 // behaves exactly as before.
 const (
-	DefaultDatabase       = "anime_recommendation"
-	DefaultCollection     = "new_animes"
+	DefaultIngestAddr     = "localhost:50051"
 	DefaultStartID        = 250000
 	DefaultTotalID        = 300000
 	DefaultBatchSize      = 50
@@ -21,15 +20,13 @@ const (
 	DefaultRequestTimeout = 30 * time.Second
 	DefaultMaxRetries     = 3
 	DefaultRetryBase      = 2 * time.Second
-	DefaultMongoTimeout   = 30 * time.Second
+	DefaultIngestTimeout  = 30 * time.Second
 )
 
 // Config holds every tunable value used by the fetcher.
 type Config struct {
-	MongoURI        string
-	MongoDatabase   string
-	MongoCollection string
-	MongoTimeout    time.Duration
+	IngestAddr    string
+	IngestTimeout time.Duration
 
 	AniListEndpoint string
 
@@ -44,12 +41,11 @@ type Config struct {
 }
 
 // Load reads the configuration from the environment, applying the defaults
-// above for anything that is not set. Only MONGODB_URI has no default.
+// above for anything that is not set.
 func Load() (*Config, error) {
 	cfg := &Config{
-		MongoURI:        os.Getenv("MONGODB_URI"),
-		MongoDatabase:   envString("MONGO_DATABASE", DefaultDatabase),
-		MongoCollection: envString("MONGO_COLLECTION", DefaultCollection),
+		IngestAddr:      envString("GRPC_INGEST_ADDR", DefaultIngestAddr),
+		IngestTimeout:   DefaultIngestTimeout,
 		AniListEndpoint: os.Getenv("ANILIST_ENDPOINT"),
 
 		StartID:   DefaultStartID,
@@ -60,7 +56,6 @@ func Load() (*Config, error) {
 		RequestTimeout: DefaultRequestTimeout,
 		MaxRetries:     DefaultMaxRetries,
 		RetryBase:      DefaultRetryBase,
-		MongoTimeout:   DefaultMongoTimeout,
 	}
 
 	var err error
@@ -86,10 +81,9 @@ func Load() (*Config, error) {
 	if cfg.RetryBase, err = envDuration("FETCH_RETRY_BASE_DELAY", cfg.RetryBase); err != nil {
 		return nil, err
 	}
-	if cfg.MongoTimeout, err = envDuration("MONGO_TIMEOUT", cfg.MongoTimeout); err != nil {
+	if cfg.IngestTimeout, err = envDuration("INGEST_TIMEOUT", cfg.IngestTimeout); err != nil {
 		return nil, err
 	}
-
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
@@ -100,14 +94,11 @@ func Load() (*Config, error) {
 // Validate reports configuration that would produce an incorrect or silently
 // truncated run.
 func (c *Config) Validate() error {
-	if c.MongoURI == "" {
-		return fmt.Errorf("config: set MONGODB_URI to your MongoDB connection string")
+	if c.IngestAddr == "" {
+		return fmt.Errorf("config: set GRPC_INGEST_ADDR to the Python IngestService address (host:port)")
 	}
-	if c.MongoDatabase == "" {
-		return fmt.Errorf("config: MONGO_DATABASE must not be empty")
-	}
-	if c.MongoCollection == "" {
-		return fmt.Errorf("config: MONGO_COLLECTION must not be empty")
+	if c.IngestTimeout <= 0 {
+		return fmt.Errorf("config: INGEST_TIMEOUT must be positive")
 	}
 	if c.StartID < 1 {
 		return fmt.Errorf("config: ANIME_START_ID must be at least 1, got %d", c.StartID)
@@ -129,9 +120,6 @@ func (c *Config) Validate() error {
 	}
 	if c.RetryBase <= 0 {
 		return fmt.Errorf("config: FETCH_RETRY_BASE_DELAY must be positive")
-	}
-	if c.MongoTimeout <= 0 {
-		return fmt.Errorf("config: MONGO_TIMEOUT must be positive")
 	}
 
 	return nil

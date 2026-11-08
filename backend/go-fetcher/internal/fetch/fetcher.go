@@ -8,7 +8,6 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/RaY8118/anime-recommendation/backend/go-fetcher/internal/database"
 	"github.com/RaY8118/anime-recommendation/backend/go-fetcher/internal/models"
 	"github.com/RaY8118/anime-recommendation/backend/go-fetcher/internal/transform"
 )
@@ -20,7 +19,7 @@ type AniList interface {
 
 // Store is the subset of the persistence layer the fetcher depends on.
 type Store interface {
-	Upsert(ctx context.Context, media []models.Media) (database.WriteResult, error)
+	Upsert(ctx context.Context, media []models.Media) (WriteResult, error)
 }
 
 // Converter turns a page of AniList entries into domain documents.
@@ -69,6 +68,12 @@ type FailedBatch struct {
 	StartID int
 	EndID   int
 	Err     error
+}
+
+type WriteResult struct {
+	Upserted int64
+	Matched  int64
+	Modified int64
 }
 
 // New builds a Fetcher.

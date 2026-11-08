@@ -7,15 +7,11 @@ Progress file for adding gRPC to this repo one step at a time.
 
 ## Status
 
-- **Current stage: Stage 3 COMPLETE ✅ → Stage 4 planning next**
-- Stage 1 (single anime Go → Python):**done** (wire proven both directions; `HasField`/pointers/proto.String lessons banked).
-- Stage 2 (client streaming):**done** (`IngestAnimes(stream) → IngestSummary`; send-loop + `CloseAndRecv` mechanics learned).
-- Stage 3 (real pipeline in Python servicer):**done.** Final layout: `app/grpc_server/{mapping,service,servicer,server}.py`; `grpc.aio` server on `settings.grpc_port`; end-of-stream embed flush via `asyncio.to_thread`; dev DB via `MONGODB_URI` path redirect. **Verified end-to-end through the real recommendation endpoint** (`GET /v1/animes/recommendations` returned gRPC-ingested anime). Lessons banked: `get_database()` is an async FastAPI dependency — services should use `get_mongo_client().get_database(DB_NAME)`; `logging.basicConfig` once at entrypoint (bare `print` gone for good); pydantic silently drops unknown keys — schema had to gain `chapters/volumes/popularity` (additive); `embedding` default-`[]` artifact popped before write to match Go-shaped docs; proto gained appended `is_adult=17` + summary counters (inserted/embedded/failed).
-- Stage 4 (remove Mongo from go-fetcher, buf breaking-check as contract guard, retire legacy /fetch):**not started — plan before code**
-- Stage 5 (hardening: deadlines, retries, bufconn tests, docs/AGENTS.md update, graceful shutdown):not started
-- Stage 3 (real pipeline in Python servicer: clean → Mongo → embed):not started
-- Stage 4 (remove Mongo from go-fetcher, buf breaking-check as contract guard):not started
-- Stage 5 (hardening: deadlines, retries, bufconn tests, docs/AGENTS.md update):not started
+- **Current stage: Stage 4, Steps 1–3 COMPLETE ✅ (real fetcher streams to grpc server) → Step 4 deletion sweep next**
+- Stage 4 progress: step 1 (proto upserted/matched/modified counters + servicer batch `bulk_write` ReplaceOne at end-of-stream) verified via grpcplay; step 2 (`isAdult` end-to-end, `internal/ingest/mapping.go` domain→proto + presence contract test) green; step 3 (`WriteResult` relocated to `internal/fetch`, `internal/ingest.Client` implements `fetch.Store` via one stream per batch, strict partial-failure per batch, config `GRPC_INGEST_ADDR`/`INGEST_TIMEOUT` (+ tests updated), `cmd/fetcher` rewritten on the gRPC client) **verified live**: real AniList window 5110–5119 → `upserted=4 matched=1` then rerun `upserted=0 matched=5 modified=5`. Note: `grpcplay` moved-correctly to `internal/ingest/client.go` (a paste landed in the wrong dir first — lesson banked).
+- Remaining Stage 4: **Step 4 deletions** — `internal/database/`, mongo-driver dep, `TestBSONTagsMatchPythonContract` (→ buf breaking check), `cmd/grpcplay`, legacy Python (`services/ingest/anilist.py`, `POST /v1/animes/fetch` route, `app/core/fetch_status.py`); **Step 5 docs** (AGENTS.md, go-fetcher/README, backend README, GEMINI.md ×2) + restore `DB_NAME` instead of the hardcoded dev-DB in service.py.
+- Stage 5 (hardening: deadlines, retries, bufconn tests, docs/AGENTS.md update, graceful shutdown, Health RPC, prod rollout):not started
+- Branching: all gRPC work on `grpc-ingest` (3bc6d33 + docs 917cf07); `master` reset to `origin/master` deliberately — deploys only happen on deliberate merge/push of the feature branch.
 - Stage 3 (real pipeline in Python servicer: clean → Mongo → embed):not started
 - Stage 4 (remove Mongo from go-fetcher, buf breaking-check as contract guard):not started
 - Stage 5 (hardening: deadlines, retries, bufconn tests, docs/AGENTS.md update):not started

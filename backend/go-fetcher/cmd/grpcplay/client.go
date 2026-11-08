@@ -44,9 +44,10 @@ func main() {
 		log.Fatalf("ingest failed: %v", err)
 	}
 
-	log.Printf("received=%d inserted=%d embedded=%d failed=%d — %s",
+	log.Printf("received=%d inserted=%d embedded=%d failed=%d (upserted=%d matched=%d modified=%d) — %s",
 		summary.GetReceived(), summary.GetInserted(), summary.GetEmbedded(),
-		summary.GetFailed(), summary.GetMessage())
+		summary.GetFailed(), summary.GetUpserted(), summary.GetMatched(),
+		summary.GetModified(), summary.GetMessage())
 	if len(summary.GetIds()) > 0 {
 		log.Printf("ingested anime ids: %v", summary.GetIds())
 	}
