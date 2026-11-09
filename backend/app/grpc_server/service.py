@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 
 from pymongo import ReplaceOne
 
-from app.core.deps import get_mongo_client
+from app.core.deps import DB_NAME, get_mongo_client
 from app.core.qdrant import vector_db
 from app.schemas.animes import Anime
 from app.services.embeddings.generate import anime_to_document
@@ -36,7 +36,7 @@ class IngestResult:
 
 
 async def ingest_stream(documents: AsyncIterator[dict]) -> IngestResult:
-    db = get_mongo_client().get_database("anime_recommendation_dev")
+    db = get_mongo_client().get_database(DB_NAME)
     result = IngestResult()
     collected: list[dict] = []
 

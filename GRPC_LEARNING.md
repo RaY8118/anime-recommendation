@@ -7,14 +7,11 @@ Progress file for adding gRPC to this repo one step at a time.
 
 ## Status
 
-- **Current stage: Stage 4, Steps 1–3 COMPLETE ✅ (real fetcher streams to grpc server) → Step 4 deletion sweep next**
-- Stage 4 progress: step 1 (proto upserted/matched/modified counters + servicer batch `bulk_write` ReplaceOne at end-of-stream) verified via grpcplay; step 2 (`isAdult` end-to-end, `internal/ingest/mapping.go` domain→proto + presence contract test) green; step 3 (`WriteResult` relocated to `internal/fetch`, `internal/ingest.Client` implements `fetch.Store` via one stream per batch, strict partial-failure per batch, config `GRPC_INGEST_ADDR`/`INGEST_TIMEOUT` (+ tests updated), `cmd/fetcher` rewritten on the gRPC client) **verified live**: real AniList window 5110–5119 → `upserted=4 matched=1` then rerun `upserted=0 matched=5 modified=5`. Note: `grpcplay` moved-correctly to `internal/ingest/client.go` (a paste landed in the wrong dir first — lesson banked).
-- Remaining Stage 4: **Step 4 deletions** — `internal/database/`, mongo-driver dep, `TestBSONTagsMatchPythonContract` (→ buf breaking check), `cmd/grpcplay`, legacy Python (`services/ingest/anilist.py`, `POST /v1/animes/fetch` route, `app/core/fetch_status.py`); **Step 5 docs** (AGENTS.md, go-fetcher/README, backend README, GEMINI.md ×2) + restore `DB_NAME` instead of the hardcoded dev-DB in service.py.
-- Stage 5 (hardening: deadlines, retries, bufconn tests, docs/AGENTS.md update, graceful shutdown, Health RPC, prod rollout):not started
+- **Current stage: Stage 4 Steps 1–4 COMPLETE ✅ (mongo deleted from Go, legacy purge verified live; commit pending) → Step 5 docs pass next**
+- Step 4 done: deleted `internal/database/`, mongo-driver dep, `TestBSONTagsMatchPythonContract`, `cmd/grpcplay`, legacy Python (`services/ingest/anilist.py`, `POST /v1/animes/fetch`, `app/core/fetch_status.py`); `service.py` DB name restored to `DB_NAME`; `models/media.go` bson tags stripped, header comment rewritten to the proto-contract story. Verified: fetcher mini-run byte-identical to pre-sweep baseline; grep for dangling refs clean.
+- **Lesson banked (port confusion):** dev now needs THREE processes — uvicorn REST on 8000 ( bystander for ingest), gRPC ingest server on 50051 (`PYTHONPATH=app/grpc_stub uv run python -m app.grpc_server.server`), and the fetcher on demand. Write path talks to GRPC_INGEST_ADDR; read path to MONGODB_URI — decoupled by design. A "running server" must be verified by `ss -tlnp | grep 50051`, not by terminal vibes; wrong-listener dials show as i/o TIMEOUT (not refused) when a listener answers differently or nothing responds.
+- Stage 5 (hardening: deadlines/timeout policy, retries, Health RPC probe, bufconn tests for ingest.Client, graceful shutdown, prod rollout decision, CI buf breaking):not started
 - Branching: all gRPC work on `grpc-ingest` (3bc6d33 + docs 917cf07); `master` reset to `origin/master` deliberately — deploys only happen on deliberate merge/push of the feature branch.
-- Stage 3 (real pipeline in Python servicer: clean → Mongo → embed):not started
-- Stage 4 (remove Mongo from go-fetcher, buf breaking-check as contract guard):not started
-- Stage 5 (hardening: deadlines, retries, bufconn tests, docs/AGENTS.md update):not started
 
 ---
 

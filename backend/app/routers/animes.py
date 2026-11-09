@@ -5,7 +5,6 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from app.core.deps import get_database
 from app.core.exceptions import AnimeNotFoundException, BadRequestException
-from app.core.fetch_status import get_current_page, update_current_page
 from app.core.sfw import apply_sfw_mongo_filter, is_adult_content
 from app.core.validate import validate_query_params
 from app.schemas.animes import (
@@ -16,7 +15,6 @@ from app.schemas.animes import (
 )
 from app.schemas.common import MessageResponse
 from app.services.embeddings.generate import generate_anime_embeddings
-from app.services.ingest.anilist import get_anime
 
 router = APIRouter()
 
@@ -104,23 +102,6 @@ async def get_animes(
         "perPage": per_page,
         "totalPages": (total + per_page - 1),
     }
-
-
-@router.post(
-    "/fetch", response_model=MessageResponse, status_code=status.HTTP_201_CREATED
-)
-async def fetch_animes(request: Request, perPage: int = 1):
-    validate_query_params(request, {"perPage"})
-    page = await get_current_page()
-    result = await get_anime(page, perPage)
-
-    if result.get("status") != "success":
-        raise HTTPException(
-            status_code=500, detail=result.get("error") or "Failed to fetch animes"
-        )
-
-    await update_current_page(page + 1)
-    return {"message": f"{result.get('inserted_ids')} animes inserted successfully"}
 
 
 @router.post(
