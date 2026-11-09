@@ -29,9 +29,9 @@ NekoRec is a full-stack anime recommendation web app. It lets users browse anime
 - **OpenRouter** — Used for embeddings (`baai/bge-m3`) and LLM chat models.
 - **AniList GraphQL API** — Source of truth for anime metadata.
 
-### Data Ingestion (Go)
+### Data Ingestion (Go + gRPC)
 
-- **Go 1.27.0** — Standalone fetcher binary at `backend/go-fetcher/` that ingests AniList IDs into MongoDB (idempotent upserts). See its README for details.
+- **Go 1.27.0** — Standalone fetcher binary at `backend/go-fetcher/` that walks AniList IDs and streams entries over **gRPC** to the Python ingest server (which does the Mongo upserts and Qdrant embedding flush — the Go side has no database dependency). See its README for details.
 
 ### Frontend (React + Vite)
 
@@ -46,7 +46,7 @@ NekoRec is a full-stack anime recommendation web app. It lets users browse anime
 
 ## 🏗️ Architecture & Data Flow
 
-1. **Ingest**: `backend/go-fetcher` walks AniList IDs and upserts documents into MongoDB collection `new_animes` (database `anime_recommendation`). Documents use explicit BSON tags (`averageScore`, `seasonYear`) shared with the Python contract (validated by Go tests).
+1. **Ingest**: `backend/go-fetcher` walks AniList IDs and streams `IngestAnimeRequest`s over gRPC (`GRPC_INGEST_ADDR`, default `localhost:50051`) to the Python ingest server (`app/grpc_server/`), which validates each document against the `Anime` schema and bulk-replaces them into MongoDB collection `new_animes` (database `anime_recommendation`) at end-of-stream. Field presence travels through the protobuf contract (`app/proto/anime/v1/ingest.proto`, guarded by `buf breaking` + mapping tests on both sides).
 2. **Embed**: Generate vector embeddings from cleaned descriptions (`app/services/embeddings/generate.py`, triggered by `GET /v1/animes/generate-embeddings`) and upsert them into the **Qdrant** collection `anime` (with payload indexes for genres, studios, status, season, score, popularity).
 3. **Serve**: FastAPI (`app.main:app`) exposes REST API under `/v1/*` (animes, recommendations, chatbot, watchlist, ping). Recommendations use vector similarity via Qdrant (`app/services/anime_recommendations.py`); the chatbot is a LangGraph pipeline in `app/services/chatbot/` that extracts search constraints, queries Qdrant, and streams LLM responses over SSE.
 4. **UI**: React app calls the backend via Axios (`src/services/api.ts`) and uses Auth0 for authenticated watchlist actions.
@@ -102,11 +102,18 @@ npm run build  # runs tsc -b && vite build
 npm run preview
 ```
 
-### 3) Data Ingestion (Go Fetcher)
+### 3) Data Ingestion (Go Fetcher + gRPC)
 
-Populate `new_animes` from AniList:
+Start the two Python processes (three-process dev topology — the ingest path doesn't touch the REST API):
 
 ```bash
+# terminal 1 — REST API (serves reads)
+cd backend && uvicorn app.main:app --reload
+
+# terminal 2 — gRPC ingest server (receives the fetcher's stream)
+cd backend && PYTHONPATH=app/grpc_stub uv run python -m app.grpc_server.server
+
+# terminal 3 — fetcher
 cd backend/go-fetcher
 go run ./cmd/fetcher
 ```
@@ -148,7 +155,7 @@ curl -X GET "http://127.0.0.1:8000/v1/animes/generate-embeddings?force=false"
 
 ### Go Fetcher (env or `.env`)
 
-The fetcher auto-loads `.env` from `./.env`, `../.env`, or `backend/.env`. See `backend/go-fetcher/README.md` for the full configuration table (`MONGODB_URI`, DB/collection, AniList batch/rate-limit settings, timeouts, retries).
+The fetcher auto-loads `.env` from `./.env`, `../.env`, or `backend/.env`. The only backend-RPC knob is `GRPC_INGEST_ADDR` (default `localhost:50051`) plus `INGEST_TIMEOUT`; see `backend/go-fetcher/README.md` for the full configuration table (AniList batch/rate-limit settings, timeouts, retries). The Python gRPC server's port is `GRPC_PORT` (default `50051`, set in `backend/.env`).
 
 ## 📂 Project Structure
 
@@ -168,8 +175,11 @@ The fetcher auto-loads `.env` from `./.env`, `../.env`, or `backend/.env`. See `
 │   │   ├── core/             # config, deps (MongoDB clients, DB name), qdrant, embeddings, auth0 security, sfw, text cleaning
 │   │   ├── routers/          # animes.py, recommendations.py, chatbot.py, ping.py, watchlist.py
 │   │   ├── schemas/          # Pydantic models (animes, recommendations, chatbot, watchlist, common)
-│   │   └── services/         # anime_recommendations.py (Qdrant similarity), ingest/anilist.py (AniList fetch), embeddings/generate.py (Qdrant upsert), chatbot/ (LangGraph RAG pipeline)
-│   └── go-fetcher/           # Go AniList → MongoDB ingestor (cmd/, internal/, go.mod)
+│   │   ├── services/         # anime_recommendations.py (Qdrant similarity), embeddings/generate.py (Qdrant upsert), chatbot/ (LangGraph RAG pipeline)
+│   │   ├── grpc_server/      # gRPC ingest side: server, servicer, service (Mongo upsert + embed flush), mapping
+│   │   ├── grpc_stub/        # Generated Python protobuf stubs (committed)
+│   │   └── proto/            # anime/v1/ingest.proto — the Go↔Python contract
+│   └── go-fetcher/           # Go AniList → gRPC-streaming fetcher (cmd/, internal/, gen/, go.mod)
 └── frontend/
     ├── index.html
     ├── vite.config.ts         # React + @tailwindcss/vite, manual vendor chunks
@@ -194,7 +204,8 @@ The fetcher auto-loads `.env` from `./.env`, `../.env`, or `backend/.env`. See `
 
 ## 🧪 Tests
 
-- **Go**: Unit tests in `backend/go-fetcher` cover the ingest loop (range walking, batch clamping, skip-and-continue on failure, cancellation, pacing), config loading and validation, the AniList client (retries/GraphQL errors), the BSON contract against Python (`TestBSONTagsMatchPythonContract`), and media transform/cleaning. Run with `go test ./...` and `go vet ./...` from `backend/go-fetcher/`.
+- **Go**: Unit tests in `backend/go-fetcher` cover the ingest loop (range walking, batch clamping, skip-and-continue on failure, cancellation, pacing), config loading and validation, the AniList client (retries/GraphQL errors), the domain→proto presence contract (`internal/ingest/mapping_test.go`), and media transform/cleaning. Run with `go test ./...` and `go vet ./...` from `backend/go-fetcher/`.
+- **Cross-language**: `buf lint` / `buf breaking` guard the protobuf contract (`backend/app/proto/anime/v1/ingest.proto`) between the Go fetcher and the Python servicer.
 - **Python/Frontend**: No test suites, configs, or scripts are present in this repo.
 
 ## 🤝 Contributing

@@ -22,9 +22,8 @@ This is a full-stack web application for anime recommendations. The backend is b
 
 ## API Endpoints
 
-The backend exposes the following endpoints under the `/v1/animes` prefix:
+The backend exposes the following endpoints under the `/v1/animes` prefix (all routes mount under `/v1`):
 
-- `POST /fetch`: Fetches and stores anime from an external API.
 - `POST /recommendations`: Recommends anime based on a query.
 - `GET /`: Retrieves a paginated list of anime with optional filters.
 - `POST /suggestions`: Adds a new anime suggestion.
@@ -54,9 +53,9 @@ The `frontend/src/services/api.ts` file contains functions for making API reques
 - `deleteFromWatchlist`: Removes an anime from the user's watchlist.
 - `updateWatchlistStatus`: Updates the status of an anime in the user's watchlist.
 
-## Data Fetching
+## Data Ingestion
 
-The `backend/app/services/ingest/anilist.py` file is responsible for fetching data from the AniList GraphQL API. The `get_anime` function fetches a paginated list of anime, processes them, generates embeddings for the descriptions, and stores them in the database. The `get_anime_by_name` function fetches a single anime by its name.
+Ingestion is a gRPC pipeline, not a REST endpoint: the Go fetcher at `backend/go-fetcher` walks AniList ID ranges and streams entries to the Python ingest server at `backend/app/grpc_server/` (protocol defined in `backend/app/proto/anime/v1/ingest.proto`). The Python servicer validates each document against the `Anime` schema, bulk-replaces them into the `new_animes` collection at end-of-stream, and flushes embeddings into Qdrant. The old `backend/app/services/ingest/anilist.py` fetch path and `POST /v1/animes/fetch` endpoint have been deleted.
 
 ## Embeddings
 
@@ -70,11 +69,12 @@ The chatbot lives in `backend/app/services/chatbot/` and is implemented as a Lan
 
 ### Backend
 
-To run the backend server:
+The backend runs as **two separate processes in dev** — uvicorn serves the REST API, the gRPC ingest server receives the Go fetcher's stream:
 
 ```bash
 cd backend
-uvicorn app.main:app --reload
+uvicorn app.main:app --reload                                        # REST API on 8000
+PYTHONPATH=app/grpc_stub uv run python -m app.grpc_server.server     # gRPC ingest on 50051
 ```
 
 ### Frontend
