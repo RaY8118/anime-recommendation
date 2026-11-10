@@ -40,4 +40,8 @@ python-grpc: ## Run the gRPC ingest server (port 50051)
 
 .PHONY: fe-build
 fe-build: ## Frontend: lint + production build (tsc -b && vite build)
-	cd frontend && npm run lint && npm run build
+	cd frontend && bun run lint && bun run build
+
+.PHONY: fe-run
+fe-run: ## Frontend: run
+	cd frontend && bun run dev
