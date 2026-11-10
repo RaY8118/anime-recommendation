@@ -5,31 +5,71 @@ on:
     branches: [master]
     paths:
       - "backend/**"
+
   pull_request:
     branches: [master]
     paths:
       - "backend/**"
+
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: backend-production-deploy
+  cancel-in-progress: false
+
 jobs:
-  deploy:
-    runs-on: ubuntu-latest
+  test:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-26.04
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Build Docker image (validation only)
+        run: |
+          docker build -t anime-recommendations:test ./backend
+
+  deploy:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-26.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Log in to Docker Hub
-        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-
-      - name: Build Docker image from ./backend
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
         run: |
-          docker build -t ray8118/anime-recommendations:latest ./backend
+          echo "$DOCKER_PASSWORD" | docker login \
+            -u "$DOCKER_USERNAME" \
+            --password-stdin
 
-      - name: Push Docker image to Docker Hub
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t ray8118/anime-recommendations:latest \
+            -t ray8118/anime-recommendations:${GITHUB_SHA::7} \
+            ./backend
+
+      - name: Push Docker images
         run: |
           docker push ray8118/anime-recommendations:latest
+          docker push ray8118/anime-recommendations:${GITHUB_SHA::7}
 
       - name: Trigger Render Deploy
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
         run: |
-          curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            "$RENDER_DEPLOY_HOOK"
