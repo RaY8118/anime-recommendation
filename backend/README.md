@@ -56,6 +56,7 @@ backend/
 │           ├── saver.py    # Redis-backed chat history saver
 │           └── config.py   # Redis/model config, prompts, timeouts
 ├── fetch_anime.py        # Legacy script (POSTs to /animes/fetch without /v1; 15s interval)
+├── tests/                # pytest smoke tests; Qdrant/embeddings stubbed, no live services
 ├── Dockerfile            # uv-based build; runs gunicorn on PORT (default 8000)
 ├── pyproject.toml        # Dependencies, requires-python ==3.12.3
 └── uv.lock               # Locked dependency graph
@@ -109,6 +110,18 @@ docker run -p 8000:8000 --env-file .env nekorec-backend
 # Runs: gunicorn app.main:app -k uvicorn.workers.UvicornWorker --workers 2 --bind 0.0.0.0:${PORT:-8000} --timeout 60 --access-logfile -
 ```
 
+## Tests
+
+```bash
+cd backend
+uv sync --locked --group test
+uv run --no-sync pytest -q
+```
+
+The suite in `tests/` is hermetic: `conftest.py` stubs `app.core.qdrant` and `app.core.embeddings` before importing the app, so no Qdrant, OpenRouter, or MongoDB service (and no `.env`) is required. It covers the `/health` and `/v1/models` routes, import-time breakage, and the gRPC→Mongo document mapping from `app/grpc_server/mapping.py` (unset proto fields → `None`, present fields validated through `Anime`).
+
+The `test` dependency group is intentionally not named `dev`, so the production Dockerfile's `uv sync --locked` does not install pytest into the image. These tests run in CI as part of the reusable `.github/workflows/test.yml` gate; the Go, frontend, and proto checks are described in the root README.
+
 ## Environment Variables
 
 | Variable | Required | Default | Notes |
@@ -137,4 +150,4 @@ docker run -p 8000:8000 --env-file .env nekorec-backend
 ## Notes
 
 - DB name comes from `DB_NAME` in `app/core/deps.py` (currently `anime_recommendation`).
-- The proto contract (`app/proto/anime/v1/ingest.proto`) is the source of truth for the Go↔Python field mapping — proto changes are append-only and require `buf generate` + `buf breaking` (see root `AGENTS.md`). No Python test suite exists; `buf lint`/`buf breaking` plus the Go tests are the guardrails.
+- The proto contract (`app/proto/anime/v1/ingest.proto`) is the source of truth for the Go↔Python field mapping — proto changes are append-only and require `buf generate` + `buf breaking` (see root `AGENTS.md`). CI runs `buf breaking`, the Go tests, the Python smoke tests, and the frontend lint/build before either deploy. `buf lint` is not a gate because the current RPC/message names already violate its recommended rules.

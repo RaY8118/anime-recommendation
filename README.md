@@ -163,7 +163,7 @@ The fetcher auto-loads `.env` from `./.env`, `../.env`, or `backend/.env`. The o
 .
 ├── README.md
 ├── GEMINI.md
-├── .github/workflows/        # CI/CD (Docker Hub+Render, Cloudflare Pages, disabled GCP)
+├── .github/workflows/        # CI/CD: reusable test.yml gate, Docker Hub+Render, Cloudflare Pages, disabled GCP
 ├── backend/
 │   ├── Dockerfile            # Gunicorn+Uvicorn, uv-based build
 │   ├── .dockerignore
@@ -179,6 +179,7 @@ The fetcher auto-loads `.env` from `./.env`, `../.env`, or `backend/.env`. The o
 │   │   ├── grpc_server/      # gRPC ingest side: server, servicer, service (Mongo upsert + embed flush), mapping
 │   │   ├── grpc_stub/        # Generated Python protobuf stubs (committed)
 │   │   └── proto/            # anime/v1/ingest.proto — the Go↔Python contract
+│   ├── tests/                # Python smoke tests (pytest; no live services needed)
 │   └── go-fetcher/           # Go AniList → gRPC-streaming fetcher (cmd/, internal/, gen/, go.mod)
 └── frontend/
     ├── index.html
@@ -201,12 +202,16 @@ The fetcher auto-loads `.env` from `./.env`, `../.env`, or `backend/.env`. The o
 
 - **Backend**: Built as Docker image (`ray8118/anime-recommendations:latest`) via GitHub Actions (`deploy-backend.yml`) and deployed to **Render** using a deploy hook. A disabled GCP Cloud Run workflow exists as an alternative.
 - **Frontend**: Built with Bun (`bun run build`) in CI (`deploy-frontend.yml`) and deployed to **Cloudflare Pages** (`project-name: nekorec`), outputting `frontend/dist/`.
+- **Test gate**: Both deploy workflows call the reusable `.github/workflows/test.yml` and their deploy jobs have `needs: test`, so a failed check stops the deploy before the Docker push (`backend`) or Cloudflare publish (`frontend`). Pull requests run the tests only; deploys happen on `master` only. Keep Render/Cloudflare git-push auto-deploy **disabled** so the Actions workflows are the only deploy path.
 
 ## 🧪 Tests
 
-- **Go**: Unit tests in `backend/go-fetcher` cover the ingest loop (range walking, batch clamping, skip-and-continue on failure, cancellation, pacing), config loading and validation, the AniList client (retries/GraphQL errors), the domain→proto presence contract (`internal/ingest/mapping_test.go`), and media transform/cleaning. Run with `go test ./...` and `go vet ./...` from `backend/go-fetcher/`.
-- **Cross-language**: `buf lint` / `buf breaking` guard the protobuf contract (`backend/app/proto/anime/v1/ingest.proto`) between the Go fetcher and the Python servicer.
-- **Python/Frontend**: No test suites, configs, or scripts are present in this repo.
+All checks run in CI via `.github/workflows/test.yml` on every push/PR touching `backend/**` or `frontend/**`. The same commands can be run locally:
+
+- **Go** (`backend/go-fetcher/`): `go test ./... && go vet ./...` — ingest loop (range walking, batch clamping, skip-and-continue on failure, cancellation, pacing), config loading, AniList client (retries/GraphQL errors), the domain→proto presence contract (`internal/ingest/mapping_test.go`), and media transform/cleaning.
+- **Python** (`backend/`): `uv sync --locked --group test && uv run --no-sync pytest -q` — smoke tests in `backend/tests/` cover `/health` and `/v1/models`, import-time breakage, and the gRPC→Mongo document mapping (unset proto fields → `None`, present fields validated through the `Anime` schema). The pytest deps live in a `test` dependency group, so the production Docker build (`uv sync --locked`) does not install them. `conftest.py` stubs Qdrant/OpenRouter embeddings before imports, so no `.env` or live services are needed.
+- **Frontend** (`frontend/`): `bun install --frozen-lockfile && bun run lint && bun run build` — ESLint plus `tsc -b && vite build` act as the typecheck gate; no component test suite yet.
+- **Proto**: `buf breaking --against ".git#commit=$(git rev-parse HEAD~1),subdir=backend/app/proto"` runs in CI to catch wire-incompatible changes to `app/proto/anime/v1/ingest.proto` (requires `fetch-depth: 0`). `buf lint` is available but not a gate: the current RPC/message names already violate its recommended rules, and renaming them would be breaking.
 
 ## 🤝 Contributing
 

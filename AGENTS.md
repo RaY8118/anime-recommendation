@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Three independent components with different toolchains. Only Go has tests; CI stages run deploys only, so verify changes locally.
+Three independent components with different toolchains. Go and Python have tests; CI runs them plus frontend lint/build and a proto wire-compat check, then deploys only if all pass. Verify locally before pushing.
 
 - `backend/` — FastAPI (Python pinned `==3.12.3` in `pyproject.toml`), deps via `uv` (`uv.lock`). Runs REST API (uvicorn, port 8000) **and** an aio gRPC ingest server (`app/grpc_server/`, port `GRPC_PORT`, default 50051) as two separate processes.
 - `frontend/` — React 19 + Vite 7 + TanStack Query + Tailwind v4; has both npm and Bun lockfiles, CI builds with **Bun**
@@ -56,4 +56,4 @@ The proto is the contract — it replaced the old hand-synced BSON tags. The pre
 
 ## Deploy
 
-Push to `master` auto-deploys: `backend/**` → Docker Hub (`ray8118/anime-recommendations`) → Render hook; `frontend/**` → Bun build → Cloudflare Pages (`nekorec`). No test/lint gate in CI, so run checks locally first. The gRPC ingest server and fetcher are currently **dev/local-only** — they are not wired into the Docker/Render deployment; a Render rollout decision is deliberately deferred until they prove out.
+Push to `master` auto-deploys: `backend/**` → Docker Hub (`ray8118/anime-recommendations`) → Render hook; `frontend/**` → Bun build → Cloudflare Pages (`nekorec`). Both workflows call the reusable `.github/workflows/test.yml` and their deploy jobs `needs: test`, so failed tests/lint/typecheck/proto checks stop the deploy; PRs run tests only. Keep Render/Cloudflare git-push auto-deploy disabled in their dashboards so the Actions gate is the only deploy path. The gRPC ingest server and fetcher are currently **dev/local-only** — they are not wired into the Docker/Render deployment; a Render rollout decision is deliberately deferred until they prove out.
