@@ -34,6 +34,9 @@ class Anime(BaseModel):
     averageScore: int | None = None
     episodes: int | None = None
     duration: int | None = None
+    chapters: int | None = None
+    volumes: int | None = None
+    popularity: int | None = None
     season: str | None = None
     seasonYear: int | None = None
     status: AnimeStatus | None = None

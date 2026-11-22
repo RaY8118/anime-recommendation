@@ -46,6 +46,7 @@ func Media(in models.GraphQLMedia) models.Media {
 		Genres:     genres,
 		Studios:    studios,
 		Popularity: in.Popularity,
+		IsAdult:    in.IsAdult,
 	}
 
 	if in.Description != nil {

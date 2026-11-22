@@ -22,22 +22,15 @@ concurrency:
 
 jobs:
   test:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-26.04
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v7
-        with:
-          persist-credentials: false
-
-      - name: Build Docker image (validation only)
-        run: |
-          docker build -t anime-recommendations:test ./backend
+    name: Tests
+    uses: ./.github/workflows/test.yml
+    secrets: inherit
 
   deploy:
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-26.04
+    name: Deploy
+    needs: test
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code

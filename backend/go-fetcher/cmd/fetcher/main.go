@@ -12,8 +12,8 @@ import (
 
 	"github.com/RaY8118/anime-recommendation/backend/go-fetcher/internal/anilist"
 	"github.com/RaY8118/anime-recommendation/backend/go-fetcher/internal/config"
-	"github.com/RaY8118/anime-recommendation/backend/go-fetcher/internal/database"
 	"github.com/RaY8118/anime-recommendation/backend/go-fetcher/internal/fetch"
+	"github.com/RaY8118/anime-recommendation/backend/go-fetcher/internal/ingest"
 
 	"github.com/joho/godotenv"
 )
@@ -44,22 +44,20 @@ func run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	client, err := database.Connect(ctx, cfg.MongoURI, cfg.MongoTimeout)
+	logger.Info("ingest target",
+		slog.String("address", cfg.IngestAddr),
+	)
+
+	ingestClient, err := ingest.NewClient(ctx, cfg.IngestAddr)
 	if err != nil {
 		return err
 	}
+
 	defer func() {
-		disconnectCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), cfg.MongoTimeout)
-		defer cancel()
-		if err := client.Disconnect(disconnectCtx); err != nil {
-			logger.Error("failed to disconnect from MongoDB", slog.String("error", err.Error()))
+		if err := ingestClient.Close(); err != nil {
+			logger.Error("failed to close ingest connection", slog.String("error", err.Error()))
 		}
 	}()
-
-	logger.Info("connected to MongoDB",
-		slog.String("database", cfg.MongoDatabase),
-		slog.String("collection", cfg.MongoCollection),
-	)
 
 	apiClient := anilist.New(anilist.Options{
 		Endpoint:   cfg.AniListEndpoint,
@@ -75,7 +73,7 @@ func run() error {
 		Delay:     cfg.RequestDelay,
 
 		AniList: apiClient,
-		Store:   database.NewStore(client, cfg.MongoDatabase, cfg.MongoCollection),
+		Store:   ingestClient,
 		Logger:  logger,
 	}).Run(ctx)
 

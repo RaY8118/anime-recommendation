@@ -1,0 +1,113 @@
+name: Tests
+
+# Reusable suite: both deploy workflows call this and depend on it before
+# shipping. Keeping it in one place means one definition of "safe to deploy".
+on:
+  workflow_call:
+
+jobs:
+  go:
+    name: Go fetcher
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go-fetcher/go.mod
+          cache-dependency-path: backend/go-fetcher/go.sum
+
+      - name: Test
+        run: go test ./...
+        working-directory: backend/go-fetcher
+
+      - name: Vet
+        run: go vet ./...
+        working-directory: backend/go-fetcher
+
+  python:
+    name: Python backend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      # Settings requires this at import time; the tests never connect to Mongo.
+      MONGODB_URI: mongodb://localhost:27017
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.8.14"
+          python-version-file: backend/pyproject.toml
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      - name: Install dependencies
+        run: uv sync --locked --group test
+
+      - name: Test
+        run: uv run --no-sync pytest -q
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
+
+      - name: Cache Bun modules
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('frontend/bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Lint
+        run: bun run lint
+
+      # `tsc -b && vite build` is also the typecheck.
+      - name: Build
+        run: bun run build
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          VITE_AUTH0_DOMAIN: ${{ secrets.VITE_AUTH0_DOMAIN }}
+          VITE_AUTH0_CLIENT_ID: ${{ secrets.VITE_AUTH0_CLIENT_ID }}
+          VITE_AUTH0_AUDIENCE: ${{ secrets.VITE_AUTH0_AUDIENCE }}
+
+  proto:
+    name: Proto wire compatibility
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          # buf breaking compares against HEAD~1.
+          fetch-depth: 0
+
+      - name: Set up buf
+        uses: bufbuild/buf-setup-action@v1
+
+      # buf lint is deliberately not a gate: the current RPC/message names
+      # already violate its recommended rules (and renaming them is breaking).
+      - name: Check wire compatibility
+        run: buf breaking --against ".git#commit=$(git rev-parse HEAD~1),subdir=backend/app/proto"
