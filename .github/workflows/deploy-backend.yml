@@ -22,8 +22,15 @@ concurrency:
 
 jobs:
   test:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-26.04
+    name: Tests
+    uses: ./.github/workflows/test.yml
+    secrets: inherit
+
+  deploy:
+    name: Deploy
+    needs: test
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code

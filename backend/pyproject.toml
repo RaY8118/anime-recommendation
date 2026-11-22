@@ -31,3 +31,11 @@ dependencies = [
     "redis>=8.1.0",
     "uvicorn>=0.35.0",
 ]
+
+# Named "test" (not "dev") so production `uv sync --locked` in the Dockerfile
+# does not install these; CI opts in with `uv sync --locked --group test`.
+[dependency-groups]
+test = [
+    "httpx>=0.28.0",
+    "pytest>=8.3.0,<9",
+]
