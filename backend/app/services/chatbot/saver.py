@@ -55,7 +55,14 @@ class AsyncRedisLiteSaver(BaseCheckpointSaver[V]):
         ttl_seconds: int | None = None,
     ) -> None:
         super().__init__()
-        self._client = AsyncRedis.from_url(redis_url)
+        # redis-py 8.x defaults socket_keepalive=True, which makes idle sockets
+        # emit TCP keepalives every ~15-30s. Railway needs ~10 min with no
+        # outbound traffic before it can sleep, so keep both off.
+        self._client = AsyncRedis.from_url(
+            redis_url,
+            health_check_interval=0,
+            socket_keepalive=False,
+        )
         self._prefix = key_prefix
         self.ttl_seconds = ttl_seconds
 

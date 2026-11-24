@@ -148,7 +148,7 @@ The `test` dependency group is intentionally not named `dev`, so the production 
 - **Chat history**: Stored in Redis (`app/services/chatbot/saver.py`), keyed by `session_id` with a TTL.
 - **Source**: AniList GraphQL API.
 
-All long-lived HTTP clients (Qdrant, OpenRouter embeddings) use `httpx.Limits(max_keepalive_connections=0)` so they close sockets after each request. Idle sockets emit TCP keepalives that would otherwise prevent Railway serverless from sleeping; Mongo clients are closed after `MONGO_IDLE_TIMEOUT_SECONDS` for the same reason.
+All long-lived HTTP clients (Qdrant, OpenRouter embeddings) use `httpx.Limits(max_keepalive_connections=0)` so they close sockets after each request. The Redis checkpointer sets `socket_keepalive=False` and `health_check_interval=0` (redis-py 8.x otherwise enables TCP keepalives by default), and Mongo clients are closed after `MONGO_IDLE_TIMEOUT_SECONDS`. None of them emit idle traffic, so Railway serverless can sleep.
 
 ## Notes
 
