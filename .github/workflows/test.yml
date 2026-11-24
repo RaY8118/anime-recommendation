@@ -106,6 +106,8 @@ jobs:
 
       - name: Set up buf
         uses: bufbuild/buf-setup-action@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
       # buf lint is deliberately not a gate: the current RPC/message names
       # already violate its recommended rules (and renaming them is breaking).
