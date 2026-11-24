@@ -118,7 +118,7 @@ uv sync --locked --group test
 uv run --no-sync pytest -q
 ```
 
-The suite in `tests/` is hermetic: `conftest.py` stubs `app.core.qdrant` and `app.core.embeddings` before importing the app, so no Qdrant, OpenRouter, or MongoDB service (and no `.env`) is required. It covers the `/health` and `/v1/models` routes, import-time breakage, and the gRPC→Mongo document mapping from `app/grpc_server/mapping.py` (unset proto fields → `None`, present fields validated through `Anime`).
+The suite in `tests/` is hermetic: `conftest.py` stubs `app.core.qdrant` and `app.core.embeddings` before importing the app, so no Qdrant, OpenRouter, or MongoDB service (and no `.env`) is required. It covers the `/health` and `/v1/models` routes, import-time breakage, the gRPC→Mongo document mapping from `app/grpc_server/mapping.py` (unset proto fields → `None`, present fields validated through `Anime`), and the idle-close/reopen lifecycle of the Mongo clients.
 
 The `test` dependency group is intentionally not named `dev`, so the production Dockerfile's `uv sync --locked` does not install pytest into the image. These tests run in CI as part of the reusable `.github/workflows/test.yml` gate; the Go, frontend, and proto checks are described in the root README.
 
@@ -127,6 +127,7 @@ The `test` dependency group is intentionally not named `dev`, so the production 
 | Variable | Required | Default | Notes |
 | --- | --- | --- | --- |
 | `MONGODB_URI` | Yes | — | MongoDB connection string |
+| `MONGO_IDLE_TIMEOUT_SECONDS` | No | `120` | Close idle Mongo clients after this many quiet seconds, stopping background heartbeats so Railway serverless can sleep (reopened lazily on the next request) |
 | `AUTH0_DOMAIN` | Yes (auth routes) | — | e.g. `your-tenant.auth0.com` |
 | `AUTH0_API_AUDIENCE` | Yes | — | Auth0 API audience/identifier |
 | `OPENROUTER_API_KEY` | Yes | — | Used for embeddings (`baai/bge-m3`) and LLM chat |
