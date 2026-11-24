@@ -1,8 +1,8 @@
 import os
 
 from app.core.embeddings import embeddings
+from app.core.qdrant_client import build_qdrant_client
 from langchain_qdrant import QdrantVectorStore
-from qdrant_client import QdrantClient
 from qdrant_client.http.models import Distance, PayloadSchemaType, VectorParams
 
 COLLECTION_NAME = "anime"
@@ -10,7 +10,7 @@ BATCH_SIZE = 200
 QDRANT_CLOUD_API_KEY = os.getenv("QDRANT_CLOUD_API_KEY")
 QDRANT_CLOUD_ENDPOINT = os.getenv("QDRANT_CLOUD_ENDPOINT")
 
-client = QdrantClient(url=QDRANT_CLOUD_ENDPOINT, api_key=QDRANT_CLOUD_API_KEY)
+client = build_qdrant_client(QDRANT_CLOUD_ENDPOINT, QDRANT_CLOUD_API_KEY)
 
 
 if not client.collection_exists(COLLECTION_NAME):
